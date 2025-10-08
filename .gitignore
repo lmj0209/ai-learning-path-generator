@@ -1,5 +1,5 @@
-Python
-pycache/
+# Python
+__pycache__/
 *.py[cod]
 *$py.class
 *.so
@@ -19,17 +19,58 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-Virtual Environment
+
+# Virtual Environment
 env/
 venv/
 ENV/
-IDE
+env.bak/
+venv.bak/
+
+# IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-Project specific
+*.sublime-project
+*.sublime-workspace
+
+# Project specific
 .env
+.env.local
 data/chroma_db/
 *.log
+.DS_Store
+
+# Cache directory (file-based cache for API responses)
+cache/
+*.cache
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+app.db
+learning_path.db
+
+# Vector DB
+vector_db/
+
+# Wandb
+wandb/
+
+# Migrations (keep the folder structure, ignore generated files)
+migrations/__pycache__/
+migrations/versions/__pycache__/
+
+# Learning paths (generated files)
+learning_paths/*.json
+
+# Test files
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS specific
+Thumbs.db
 .DS_Store

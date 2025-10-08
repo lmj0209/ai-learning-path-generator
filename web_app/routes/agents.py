@@ -1,5 +1,4 @@
-import datetime
-import json
+from datetime import datetime
 import traceback
 from flask import Blueprint, request, jsonify, current_app, render_template
 from flask_cors import cross_origin

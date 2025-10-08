@@ -5,10 +5,10 @@ from typing import List, Dict, Any, Optional
 import json
 import os
 from pathlib import Path
-from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores import FAISS
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.vectorstores import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders.directory import DirectoryLoader
+from langchain.document_loaders import DirectoryLoader
 
 class VectorStore:
     """

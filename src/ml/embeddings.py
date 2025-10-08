@@ -5,10 +5,10 @@ Handles text vectorization for semantic search.
 from typing import List, Dict, Any, Optional, Union
 import numpy as np
 
-# Import directly from langchain-openai instead of openai
-from langchain_openai import OpenAIEmbeddings
+# Import from langchain (old version compatible with Pydantic v1)
+from langchain.embeddings import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.schema.document import Document
+from langchain.schema import Document
 
 from src.utils.config import OPENAI_API_KEY, EMBEDDING_MODEL
 

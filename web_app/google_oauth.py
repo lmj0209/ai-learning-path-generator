@@ -5,11 +5,21 @@ from flask_login import login_user
 from web_app.models import User
 from web_app import db
 import logging
-import json
+from flask_dance.consumer.storage.session import SessionStorage
+
+# Ensure local development can use HTTP for OAuth exchanges
+if os.getenv("FLASK_ENV", "development") == "development" and not os.getenv("RENDER"):
+    os.environ.setdefault("OAUTHLIB_INSECURE_TRANSPORT", "1")
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('google_oauth')
+
+# Log environment variables only in debug mode
+if os.getenv("DEBUG") == "True" and os.getenv("LOG_ENV_VARS") == "True":
+    for key in os.environ:
+        if 'SECRET' not in key and 'KEY' not in key:
+            logger.info(f"ENV: {key}={os.environ.get(key)}")
 
 # Create a very basic blueprint for Google OAuth
 google_bp = make_google_blueprint(
@@ -20,21 +30,24 @@ google_bp = make_google_blueprint(
         "https://www.googleapis.com/auth/userinfo.email",
         "https://www.googleapis.com/auth/userinfo.profile"
     ],
-    # Use the flask_dance default configuration (no redirect_uri specified)
+    redirect_to="google_auth.google_callback",
+    redirect_url="/auth/google/authorized",
+    storage=SessionStorage()
 )
-
-# Log all environment variables for debugging (without sensitive values)
-for key in os.environ:
-    if 'SECRET' not in key and 'KEY' not in key:
-        logger.info(f"ENV: {key}={os.environ.get(key)}")
 
 
 # Create a separate blueprint for our callback route
 bp = Blueprint("google_auth", __name__)
 
-# Add login route for those who prefer a dedicated endpoint
+# Add login helpers that point to the Flask-Dance blueprint
 @bp.route("/login")
 def login():
+    return redirect(url_for("google.login"))
+
+
+@bp.route("/google")
+def start_google_login():
+    """Route used by the UI to start Google OAuth."""
     return redirect(url_for("google.login"))
 
 @bp.route("/google/authorized")
@@ -51,7 +64,8 @@ def google_callback():
     # If this route is hit directly without going through OAuth flow
     if not google.authorized:
         logger.error("Not authorized. Redirecting to login.")
-        return redirect(url_for("google.login"))
+        flash("Please try logging in again.", "info")
+        return redirect(url_for("auth.login"))
 
     # Get user info from Google
     try:
@@ -74,17 +88,29 @@ def google_callback():
         user = User.query.filter_by(email=email).first()
         if not user:
             logger.info(f"Creating new user: {email}")
-            user = User(username=info.get("name", email.split("@")[0]), email=email)
+            user = User(
+                username=info.get("name", email.split("@")[0]), 
+                email=email,
+                registration_source='google'
+            )
             db.session.add(user)
             db.session.commit()
+            flash("Welcome! Your account has been created.", "success")
         else:
             logger.info(f"Found existing user: {email}")
 
-        login_user(user, remember=True)
+        # Log the user in with a permanent session
+        session.permanent = True
+        login_user(user, remember=True, duration=None)
+        
         flash("Logged in with Google!", "success")
         return redirect(url_for("main.index"))
         
     except Exception as e:
         logger.exception(f"Error in Google callback: {str(e)}")
-        flash(f"An error occurred during login: {str(e)}", "danger")
+        # Check if it's a state mismatch error
+        if "MismatchingStateError" in str(type(e).__name__) or "state" in str(e).lower():
+            flash("Session expired. Please try logging in again.", "warning")
+        else:
+            flash(f"An error occurred during login. Please try again.", "danger")
         return redirect(url_for("auth.login"))

@@ -6,37 +6,27 @@ from typing import List, Dict, Any, Optional, Union, TypeVar, Type
 import json
 import os
 
-# Ensure we're using Pydantic v1.x
+# Using Pydantic v1
 import pydantic
 from pydantic import BaseModel as PydanticBaseModel
 
-# Import directly from langchain-openai instead
-from langchain_openai import OpenAI
-from langchain_openai import ChatOpenAI
+# Import from langchain (older version compatible with Pydantic v1)
+from langchain.llms import OpenAI
+from langchain.chat_models import ChatOpenAI
 
 # For type hints
 T = TypeVar('T', bound='BaseModel')
 
 class BaseModel(PydanticBaseModel):
-    """Base model that uses Pydantic v1.x compatibility layer."""
+    """Base model using Pydantic v1."""
     class Config:
         arbitrary_types_allowed = True
-        json_encoders = {
-            # Add custom JSON encoders if needed
-        }
-
-    @classmethod
-    def parse_obj(cls: Type[T], obj: Any) -> T:
-        return super().model_validate(obj)
-
-    def dict(self, **kwargs):
-        return self.model_dump(**kwargs)
 
 # We'll use only OpenAI for now to make the application work
 # Both providers will default to using OpenAI
 
-from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
-from langchain.chains.llm import LLMChain
+from langchain.prompts import PromptTemplate, ChatPromptTemplate
+from langchain.chains import LLMChain
 
 from src.utils.config import (
     OPENAI_API_KEY,
@@ -46,6 +36,15 @@ from src.utils.config import (
     MAX_TOKENS,
     TEMPERATURE
 )
+
+# Import token optimization utilities for cost savings
+from src.utils.helpers import optimize_prompt, count_tokens, estimate_api_cost
+
+# Import caching utilities to avoid repeated API calls
+from src.utils.cache import cache, cached
+
+# Import observability utilities for LLM monitoring
+from src.utils.observability import get_observability_manager, estimate_cost
 
 class ModelOrchestrator:
     """
@@ -102,6 +101,9 @@ class ModelOrchestrator:
             
         # Track current model name
         self.model_name = DEFAULT_MODEL
+        
+        # Initialize observability manager
+        self.obs_manager = get_observability_manager()
 
         # Override default model if DeepSeek provider is selected
         if self.provider == 'deepseek':
@@ -209,6 +211,7 @@ class ModelOrchestrator:
         prompt: str, 
         relevant_documents: Optional[List[str]] = None,
         temperature: Optional[float] = None,
+        use_cache: bool = True  # NEW: Enable caching by default
     ) -> str:
         """
         Generate a text response from the language model.
@@ -217,17 +220,33 @@ class ModelOrchestrator:
             prompt: The prompt for the model
             relevant_documents: Optional list of relevant documents to add context
             temperature: Optional override for model temperature
+            use_cache: Whether to use cached responses (default: True)
             
         Returns:
             The generated response as a string
         """
-        # Prepare context with relevant documents if available
-        context = ""
-        if relevant_documents and len(relevant_documents) > 0:
-            context = "Relevant information:\n" + "\n\n".join(relevant_documents)
+        # Check cache first to save money! 💰
+        if use_cache:
+            cache_key = cache.cache_key(
+                "response",
+                prompt[:200],  # First 200 chars of prompt
+                str(relevant_documents)[:100] if relevant_documents else "",
+                self.model_name,
+                temperature or TEMPERATURE
+            )
+            
+            cached_response = cache.get(cache_key)
+            if cached_response:
+                print("💰 Using cached response - $0.00 cost!")
+                return cached_response
         
-        # Create the full prompt with context
-        full_prompt = f"{prompt}\n\n{context}" if context else prompt
+        # Optimize prompt to reduce token usage and save money! 💰
+        full_prompt = optimize_prompt(prompt, relevant_documents, max_tokens=4000)
+        
+        # Log token count and estimated cost for monitoring
+        input_token_count = count_tokens(full_prompt, self.model_name)
+        estimated_input_cost = estimate_api_cost(input_token_count, self.model_name)
+        print(f"💰 Token count: {input_token_count} (~${estimated_input_cost:.4f} input cost)")
         
         try:
             # Set up the temperature
@@ -253,7 +272,33 @@ class ModelOrchestrator:
                     timeout=120
                 )
                 
-                print(f"DEBUG: API call completed in {time.time() - start_time:.2f} seconds")
+                latency_ms = (time.time() - start_time) * 1000
+                print(f"DEBUG: API call completed in {latency_ms:.2f}ms")
+                
+                # Estimate output tokens and total cost
+                output_token_count = count_tokens(response_text, self.model_name) if response_text else 0
+                total_cost = estimate_cost(self.model_name, input_token_count, output_token_count)
+                
+                # Log to observability platform (LangSmith + W&B)
+                self.obs_manager.log_llm_call(
+                    prompt=full_prompt,
+                    response=response_text,
+                    model=self.model_name,
+                    metadata={
+                        "temperature": temp,
+                        "max_tokens": MAX_TOKENS,
+                        "provider": self.provider,
+                        "cached": False
+                    },
+                    latency_ms=latency_ms,
+                    token_count=input_token_count + output_token_count,
+                    cost=total_cost
+                )
+                
+                # Cache the response for future use (save money!)
+                if use_cache and response_text:
+                    cache.set(cache_key, response_text, ttl=86400)  # Cache for 24 hours
+                
                 return response_text
                 
             except Exception as e:
@@ -280,12 +325,69 @@ class ModelOrchestrator:
             
             raise ValueError(error_msg) from e
     
+    def generate_response_stream(
+        self, 
+        prompt: str, 
+        relevant_documents: Optional[List[str]] = None,
+        temperature: Optional[float] = None,
+    ):
+        """
+        Generate streaming response for real-time output.
+        
+        Why streaming:
+        - Users see progress immediately
+        - Perceived performance is better
+        - Same cost as regular response!
+        - Better UX = happier users
+        
+        Args:
+            prompt: The prompt for the model
+            relevant_documents: Optional list of relevant documents to add context
+            temperature: Optional override for model temperature
+        
+        Yields:
+            Chunks of response text as they arrive
+        """
+        # Optimize prompt to reduce costs
+        full_prompt = optimize_prompt(prompt, relevant_documents, max_tokens=4000)
+        
+        # Log token count
+        token_count = count_tokens(full_prompt, self.model_name)
+        estimated_cost = estimate_api_cost(token_count, self.model_name)
+        print(f"💰 Streaming - Token count: {token_count} (~${estimated_cost:.4f} input cost)")
+        
+        temp = temperature if temperature is not None else TEMPERATURE
+        
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=OPENAI_API_KEY)
+            
+            stream = client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": "You are an expert educational AI assistant that specializes in creating personalized learning paths."},
+                    {"role": "user", "content": full_prompt}
+                ],
+                temperature=temp,
+                max_tokens=MAX_TOKENS,
+                stream=True  # Enable streaming!
+            )
+            
+            for chunk in stream:
+                if chunk.choices[0].delta.content is not None:
+                    yield chunk.choices[0].delta.content
+                    
+        except Exception as e:
+            print(f"Streaming error: {str(e)}")
+            yield f"Error: {str(e)}"
+    
     def generate_structured_response(
         self,
         prompt: str,
         output_schema: str,
         relevant_documents: Optional[List[str]] = None,
         temperature: Optional[float] = None,
+        use_cache: bool = True  # NEW: Enable caching by default
     ) -> str:
         """
         Generate a structured response that follows a specific schema.
@@ -295,10 +397,26 @@ class ModelOrchestrator:
             output_schema: The schema instructions for the output
             relevant_documents: Optional list of relevant documents to add context
             temperature: Optional override for model temperature
+            use_cache: Whether to use cached responses (default: True)
             
         Returns:
             The generated response as a JSON string
         """
+        # Check cache first to save money! 💰
+        if use_cache:
+            cache_key = cache.cache_key(
+                "structured",
+                prompt[:200],  # First 200 chars of prompt
+                output_schema[:100],  # First 100 chars of schema
+                str(relevant_documents)[:100] if relevant_documents else "",
+                self.model_name,
+                temperature or 0.2
+            )
+            
+            cached_response = cache.get(cache_key)
+            if cached_response:
+                print("💰 Using cached structured response - $0.00 cost!")
+                return cached_response
         # Determine if this is a learning path generation
         is_learning_path = 'LearningPath' in output_schema
         
@@ -339,13 +457,13 @@ class ModelOrchestrator:
         Do not include any explanatory text outside the JSON structure.
         """
         
-        # Prepare context with relevant documents if available
-        context = ""
-        if relevant_documents and len(relevant_documents) > 0:
-            context = "Relevant information:\n" + "\n\n".join(relevant_documents)
+        # Optimize prompt with context to reduce token usage 💰
+        full_prompt = optimize_prompt(schema_prompt, relevant_documents, max_tokens=6000)
         
-        # Create the full prompt with context
-        full_prompt = f"{schema_prompt}\n\n{context}" if context else schema_prompt
+        # Log token count and estimated cost
+        token_count = count_tokens(full_prompt, self.model_name)
+        estimated_cost = estimate_api_cost(token_count, self.model_name)
+        print(f"💰 Structured response - Token count: {token_count} (~${estimated_cost:.4f} input cost)")
         
         # Set up the temperature - lower for structured outputs
         temp = temperature if temperature is not None else 0.2
@@ -528,7 +646,12 @@ class ModelOrchestrator:
                                 elif field == 'skills_gained':
                                     milestone['skills_gained'] = [f"Skills related to {data.get('topic', 'the subject')}"]
             
-            return json.dumps(data)
+            # Cache the successful response for future use (save money!)
+            json_result = json.dumps(data)
+            if use_cache:
+                cache.set(cache_key, json_result, ttl=86400)  # Cache for 24 hours
+            
+            return json_result
         except Exception as e:
             print(f"DEBUG: Error parsing initial JSON: {str(e)}")
             
@@ -771,15 +894,17 @@ class ModelOrchestrator:
         
         Their learning style is {learning_style} and their expertise level is {expertise_level}.
         
+        IMPORTANT: All resources MUST be in English only. Do not include resources in Portuguese, Spanish, or any other language.
+        
         For each resource, include:
-        1. Title
+        1. Title (in English)
         2. Type (video, article, book, interactive, course, documentation, podcast, project)
-        3. Description (1-2 sentences)
+        3. Description (1-2 sentences in English)
         4. Difficulty level (beginner, intermediate, advanced, expert)
         5. Estimated time to complete (in minutes or hours)
         6. URL (create a realistic but fictional URL if needed)
         
-        Provide the response as a JSON array of resource objects.
+        Provide the response as a JSON array of resource objects. All text fields must be in English.
         """
         
         response = self.generate_structured_response(

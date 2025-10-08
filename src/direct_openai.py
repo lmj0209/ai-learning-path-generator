@@ -5,7 +5,9 @@ import os
 import json
 import requests
 from typing import Dict, Any, List, Optional
+from langsmith import traceable as langsmith_traceable
 
+@langsmith_traceable(name="OpenAI_Direct_Call")
 def generate_completion(
     prompt: str,
     system_message: str = "You are an expert educational AI assistant that specializes in creating personalized learning paths.",

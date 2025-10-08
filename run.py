@@ -40,9 +40,10 @@ print("--- Flask app created via factory ---")
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
-    debug = os.getenv("DEBUG", "True").lower() in ("true", "1", "t")
+    # Disable debug mode to prevent auto-reloading issues
+    debug = False
     
     print(f"Starting AI Learning Path Generator on port {port}")
     print("Visit http://localhost:5000 in your browser")
     
-    app.run(host="0.0.0.0", port=port, debug=debug)
+    app.run(host="0.0.0.0", port=port, debug=debug, use_reloader=False)

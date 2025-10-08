@@ -36,15 +36,20 @@ def create_app(config_class=Config):
     from web_app.auth_routes import bp as auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
 
-    # Google OAuth blueprint (Flask-Dance)
-    from web_app.google_oauth import google_bp, bp as google_auth_bp
-    # Register Flask-Dance blueprint at root level for default OAuth flow
-    app.register_blueprint(google_bp, url_prefix="")  # Will handle /google directly 
-    # Register our auth blueprint for callbacks and login helpers
-    app.register_blueprint(google_auth_bp, url_prefix="/auth")  # For /auth routes
-
+    from web_app.api_endpoints import api_bp
+    app.register_blueprint(api_bp)
 
     # Import models here to ensure they are registered with SQLAlchemy
     from web_app import models
+    
+    # Google OAuth blueprint (Flask-Dance)
+    from web_app.google_oauth import google_bp, bp as google_auth_bp
+    # Register Flask-Dance blueprint at /login/google
+    app.register_blueprint(google_bp, url_prefix="/login")
+    # Register our auth blueprint for callbacks and helper routes under /auth
+    app.register_blueprint(google_auth_bp, url_prefix="/auth")
+    
+    # Flask-Dance will use session storage by default
+    # This works better for our use case since we create the user in our callback
 
     return app

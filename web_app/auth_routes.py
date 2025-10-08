@@ -110,73 +110,36 @@ def logout():
 @login_manager.user_loader 
 def load_user(user_id):
     return User.query.get(int(user_id))
-
 # AJAX routes for enhanced user experience
 
 @bp.route('/check-username', methods=['POST'])
 def check_username():
     """Check if a username is available and suggest alternatives if not"""
-    data = request.get_json()
-    username = data.get('username', '')
-    
-    if not username or len(username) < 3:
+    data = request.get_json(silent=True) or {}
+    username = (data.get('username') or '').strip()
+
+    if len(username) < 3:
         return jsonify({
-            'valid': False,
+            'available': False,
             'message': 'Username must be at least 3 characters long'
         })
-    
-    # Check if username exists
+
     user = User.query.filter_by(username=username).first()
     if user is not None:
-        # Generate suggestions
         base = username
         suggestions = [
             f"{base}{random.randint(1, 999)}",
             f"awesome_{base}",
             f"{base}_learner"
         ]
-        
+
         return jsonify({
-            'valid': False,
+            'available': False,
             'message': 'This username is already taken',
             'suggestions': suggestions
         })
-    
+
     return jsonify({
-        'valid': True,
+        'available': True,
         'message': 'Username is available!'
-    })
-
-@bp.route('/check-password-strength', methods=['POST'])
-def check_password_strength():
-    """Check password strength and provide feedback"""
-    data = request.get_json()
-    password = data.get('password', '')
-    
-    # Create a form instance to use its method
-    form = RegistrationForm()
-    result = form.get_password_feedback(password)
-    
-    return jsonify(result)
-
-@bp.route('/suggest-usernames', methods=['POST'])
-def suggest_usernames():
-    """Generate username suggestions based on email or name"""
-    data = request.get_json()
-    email = data.get('email', '')
-    
-    if not email or '@' not in email:
-        return jsonify({
-            'success': False,
-            'message': 'Please provide a valid email'
-        })
-    
-    # Create form instance to use its method
-    form = RegistrationForm()
-    username_base = email.split('@')[0]
-    suggestions = form._generate_username_suggestions(username_base)
-    
-    return jsonify({
-        'success': True,
-        'suggestions': suggestions
     })

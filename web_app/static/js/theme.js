@@ -20,12 +20,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Set initial theme
     const storedTheme = localStorage.getItem('theme');
-    if (storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    if (storedTheme === 'light') {
+        root.classList.remove('dark');
+        showLightIcons();
+    } else if (storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
         root.classList.add('dark');
         showDarkIcons();
     } else {
-        root.classList.remove('dark');
-        showLightIcons();
+        // Default to dark theme
+        root.classList.add('dark');
+        showDarkIcons();
     }
 
     function toggleTheme() {

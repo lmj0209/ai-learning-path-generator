@@ -2,18 +2,20 @@
 gunicorn>=21.2.0
 python-dotenv==1.0.1
 Flask>=2.0.1
+
+# Pydantic v1 - MUST be installed first and locked
+pydantic==1.10.18
+email-validator==2.1.0.post1
+
+# LangChain - using older versions compatible with Pydantic v1
 langchain==0.0.267
-langchain-community>=0.0.1
-langchain-openai>=0.0.1
 openai>=1.0.0
-pydantic==1.10.13  # Downgraded to v1 for wider binary wheel support and to avoid Rust build
-# pydantic-core removed (not needed for v1)
+tiktoken>=0.5.0  # Token counting for cost optimization
 Flask-SQLAlchemy==3.1.1
 psycopg2-binary>=2.9.9  # Postgres driver for production
 Flask-Login==0.6.3
 Flask-WTF==1.2.1
 Flask-Migrate==4.0.7
-email-validator==2.1.1
 
 # Document processing
 unstructured==0.10.30  # Using base package without all-docs to avoid complex deps
@@ -40,8 +42,19 @@ flask-wtf>=1.0.0
 Jinja2>=3.0.1
 werkzeug>=2.0.1
 
+# HTTP client for async resource validation
+aiohttp>=3.9.0
+
+# Caching
+redis>=4.6.0
+
+# Observability & Monitoring
+langsmith>=0.1.0  # LLM tracing and debugging
+wandb>=0.16.0  # Experiment tracking and metrics
+
 # Development
 pytest>=7.0.0
+pytest-asyncio>=0.21.0  # For async test support
 
 # Platform-specific dependencies
 --find-links https://download.pytorch.org/whl/torch_stable.html

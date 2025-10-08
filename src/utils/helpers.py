@@ -168,3 +168,181 @@ def match_resources_to_learning_style(
     # Sort by style score (higher is better)
     sorted_resources = [r[0] for r in sorted(resources_with_scores, key=lambda x: x[1], reverse=True)]
     return sorted_resources
+
+
+# ============================================
+# TOKEN OPTIMIZATION UTILITIES
+# Cost-saving functions to reduce API expenses
+# ============================================
+
+def count_tokens(text: str, model: str = "gpt-4o-mini") -> int:
+    """
+    Count tokens in text for a specific model.
+    This helps us avoid expensive API calls with huge prompts.
+    
+    Why this matters:
+    - OpenAI charges per token (not per character)
+    - Knowing token count helps us stay within budget
+    - Prevents unexpected API costs
+    
+    Args:
+        text: The text to count tokens for
+        model: The model name to use for encoding
+    
+    Returns:
+        Number of tokens
+    
+    Example:
+        >>> count_tokens("Hello, world!")
+        4
+    """
+    try:
+        import tiktoken
+        try:
+            encoding = tiktoken.encoding_for_model(model)
+        except KeyError:
+            # Fallback to cl100k_base (used by GPT-4, GPT-3.5-turbo, text-embedding-ada-002)
+            encoding = tiktoken.get_encoding("cl100k_base")
+        
+        return len(encoding.encode(text))
+    except ImportError:
+        # Fallback: rough estimate if tiktoken not available
+        # Approximate: 1 token ≈ 4 characters for English text
+        return len(text) // 4
+
+
+def truncate_text(text: str, max_tokens: int = 3000, model: str = "gpt-4o-mini") -> str:
+    """
+    Truncate text to fit within token limit while keeping the most important parts.
+    
+    Why: OpenAI charges per token. We want to send ONLY what's necessary.
+    
+    Strategy:
+    - Keep first 70% (context and setup)
+    - Keep last 30% (recent/relevant info)
+    - This preserves both context and recency
+    
+    Args:
+        text: Text to truncate
+        max_tokens: Maximum tokens to allow
+        model: Model to use for token counting
+    
+    Returns:
+        Truncated text
+    
+    Example:
+        >>> long_text = "..." * 10000
+        >>> short_text = truncate_text(long_text, max_tokens=100)
+        >>> count_tokens(short_text) <= 100
+        True
+    """
+    try:
+        import tiktoken
+        try:
+            encoding = tiktoken.encoding_for_model(model)
+        except KeyError:
+            encoding = tiktoken.get_encoding("cl100k_base")
+        
+        tokens = encoding.encode(text)
+        
+        if len(tokens) <= max_tokens:
+            return text
+        
+        # Keep first 70% and last 30% to preserve context
+        first_part = int(max_tokens * 0.7)
+        last_part = int(max_tokens * 0.3)
+        
+        truncated_tokens = tokens[:first_part] + tokens[-last_part:]
+        return encoding.decode(truncated_tokens)
+    except ImportError:
+        # Fallback: character-based truncation
+        max_chars = max_tokens * 4
+        if len(text) <= max_chars:
+            return text
+        first_part = int(max_chars * 0.7)
+        last_part = int(max_chars * 0.3)
+        return text[:first_part] + "\n...[truncated]...\n" + text[-last_part:]
+
+
+def optimize_prompt(prompt: str, context: Optional[List[str]] = None, max_tokens: int = 4000) -> str:
+    """
+    Optimize prompt by truncating context intelligently.
+    
+    How it works:
+    1. Count tokens in main prompt (always kept intact)
+    2. Calculate remaining tokens for context
+    3. Truncate context if needed
+    4. Combine prompt + optimized context
+    
+    This ensures:
+    - Main prompt is never truncated (it's critical)
+    - Context is added only if space allows
+    - Total stays within budget
+    
+    Args:
+        prompt: Main prompt (always kept)
+        context: Additional context (can be truncated)
+        max_tokens: Total token budget
+    
+    Returns:
+        Optimized prompt with context
+    
+    Example:
+        >>> prompt = "Generate a learning path for Python"
+        >>> context = ["Python is a programming language...", "..."]
+        >>> optimized = optimize_prompt(prompt, context, max_tokens=500)
+        >>> count_tokens(optimized) <= 500
+        True
+    """
+    prompt_tokens = count_tokens(prompt)
+    
+    if context:
+        context_text = "\n\n".join(context)
+        available_tokens = max_tokens - prompt_tokens - 100  # 100 token buffer for safety
+        
+        if available_tokens > 0:
+            context_text = truncate_text(context_text, available_tokens)
+            return f"{prompt}\n\nContext:\n{context_text}"
+    
+    return prompt
+
+
+def estimate_api_cost(token_count: int, model: str = "gpt-4o-mini") -> float:
+    """
+    Estimate the cost of an API call based on token count.
+    
+    Pricing (as of 2024):
+    - gpt-4o-mini: $0.15 per 1M input tokens, $0.60 per 1M output tokens
+    - gpt-3.5-turbo: $0.50 per 1M input tokens, $1.50 per 1M output tokens
+    - gpt-4: $30 per 1M input tokens, $60 per 1M output tokens
+    
+    Args:
+        token_count: Number of tokens
+        model: Model name
+    
+    Returns:
+        Estimated cost in USD
+    
+    Example:
+        >>> cost = estimate_api_cost(1000, "gpt-4o-mini")
+        >>> print(f"${cost:.4f}")
+        $0.0002
+    """
+    # Pricing per 1M tokens (input)
+    pricing = {
+        "gpt-4o-mini": 0.15,
+        "gpt-4o": 2.50,
+        "gpt-4": 30.00,
+        "gpt-3.5-turbo": 0.50,
+        "text-embedding-3-small": 0.02,
+        "text-embedding-3-large": 0.13,
+        "text-embedding-ada-002": 0.10,
+    }
+    
+    # Get price per million tokens
+    price_per_million = pricing.get(model, 0.15)  # Default to gpt-4o-mini pricing
+    
+    # Calculate cost
+    cost = (token_count / 1_000_000) * price_per_million
+    
+    return cost
