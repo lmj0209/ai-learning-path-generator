@@ -49,7 +49,7 @@ aiohttp>=3.9.0
 redis>=4.6.0
 
 # Observability & Monitoring
-langsmith>=0.1.0  # LLM tracing and debugging
+langsmith<0.1.0,>=0.0.21  # LLM tracing and debugging (compatible with langchain 0.0.267)
 wandb>=0.16.0  # Experiment tracking and metrics
 
 # Development
