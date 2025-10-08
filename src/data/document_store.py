@@ -108,11 +108,12 @@ class DocumentStore:
         
         # Initialize shared client (connection pooling)
         if DocumentStore._shared_client is None:
-            print("--- DocumentStore.__init__: Initializing shared chromadb.PersistentClient ---")
+            print("--- DocumentStore.__init__: Initializing shared chromadb.Client ---")
             try:
-                DocumentStore._shared_client = chromadb.PersistentClient(
-                    path=self.db_path,
-                    settings=Settings(
+                DocumentStore._shared_client = chromadb.Client(
+                    Settings(
+                        chroma_db_impl="duckdb+parquet",
+                        persist_directory=self.db_path,
                         anonymized_telemetry=False,
                         allow_reset=True
                     )
