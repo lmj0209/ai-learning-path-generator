@@ -43,6 +43,7 @@ from src.utils.config import (
     HYBRID_TOP_K,
     BM25_K1,
     BM25_B,
+    REDIS_URL,
     REDIS_HOST,
     REDIS_PORT,
     REDIS_PASSWORD,
@@ -676,6 +677,7 @@ class DocumentStore:
             try:
                 from src.utils.semantic_cache import SemanticCache
                 cache_client = SemanticCache(
+                    redis_url=REDIS_URL,
                     redis_host=REDIS_HOST,
                     redis_port=REDIS_PORT,
                     redis_password=REDIS_PASSWORD,
@@ -871,19 +873,28 @@ class DocumentStore:
         """Get a cached learning path from Redis."""
         try:
             import redis
-            # Build Redis connection params
-            redis_params = {
-                'host': REDIS_HOST,
-                'port': REDIS_PORT,
-                'db': REDIS_DB,
-                'decode_responses': True
-            }
-            # Only add password if it's not empty (strip whitespace)
-            password = (REDIS_PASSWORD or '').strip()
-            if password:
-                redis_params['password'] = password
+            # Use REDIS_URL if available (for Upstash, Render, etc.)
+            if REDIS_URL:
+                redis_client = redis.from_url(
+                    REDIS_URL,
+                    decode_responses=True,
+                    ssl_cert_reqs=None
+                )
+            else:
+                # Build Redis connection params
+                redis_params = {
+                    'host': REDIS_HOST,
+                    'port': REDIS_PORT,
+                    'db': REDIS_DB,
+                    'decode_responses': True
+                }
+                # Only add password if it's not empty (strip whitespace)
+                password = (REDIS_PASSWORD or '').strip()
+                if password:
+                    redis_params['password'] = password
+                
+                redis_client = redis.Redis(**redis_params)
             
-            redis_client = redis.Redis(**redis_params)
             cached_data = redis_client.get(f"path_cache:{key}")
             if cached_data:
                 return json.loads(cached_data)
@@ -896,19 +907,28 @@ class DocumentStore:
         """Cache a learning path in Redis."""
         try:
             import redis
-            # Build Redis connection params
-            redis_params = {
-                'host': REDIS_HOST,
-                'port': REDIS_PORT,
-                'db': REDIS_DB,
-                'decode_responses': True
-            }
-            # Only add password if it's not empty (strip whitespace)
-            password = (REDIS_PASSWORD or '').strip()
-            if password:
-                redis_params['password'] = password
+            # Use REDIS_URL if available (for Upstash, Render, etc.)
+            if REDIS_URL:
+                redis_client = redis.from_url(
+                    REDIS_URL,
+                    decode_responses=True,
+                    ssl_cert_reqs=None
+                )
+            else:
+                # Build Redis connection params
+                redis_params = {
+                    'host': REDIS_HOST,
+                    'port': REDIS_PORT,
+                    'db': REDIS_DB,
+                    'decode_responses': True
+                }
+                # Only add password if it's not empty (strip whitespace)
+                password = (REDIS_PASSWORD or '').strip()
+                if password:
+                    redis_params['password'] = password
+                
+                redis_client = redis.Redis(**redis_params)
             
-            redis_client = redis.Redis(**redis_params)
             redis_client.setex(f"path_cache:{key}", ttl, json.dumps(path))
             print(f"💾 Cached learning path: {key[:8]}... (TTL: {ttl}s)")
         except Exception as e:

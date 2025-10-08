@@ -35,6 +35,7 @@ class SemanticCache:
     
     def __init__(
         self,
+        redis_url: Optional[str] = None,
         redis_host: str = "localhost",
         redis_port: int = 6379,
         redis_password: Optional[str] = None,
@@ -47,10 +48,11 @@ class SemanticCache:
         Initialize semantic cache.
         
         Args:
-            redis_host: Redis server host
-            redis_port: Redis server port
-            redis_password: Redis password (if required)
-            redis_db: Redis database number
+            redis_url: Full Redis URL (e.g., redis://... or rediss://... for SSL)
+            redis_host: Redis server host (used if redis_url not provided)
+            redis_port: Redis server port (used if redis_url not provided)
+            redis_password: Redis password (used if redis_url not provided)
+            redis_db: Redis database number (used if redis_url not provided)
             ttl: Time-to-live for cached entries (seconds)
             similarity_threshold: Minimum cosine similarity for cache hit
             openai_api_key: OpenAI API key for embeddings
@@ -64,17 +66,28 @@ class SemanticCache:
         # Initialize Redis
         if REDIS_AVAILABLE:
             try:
-                self.redis_client = redis.Redis(
-                    host=redis_host,
-                    port=redis_port,
-                    password=redis_password if redis_password else None,
-                    db=redis_db,
-                    decode_responses=False  # We'll handle encoding/decoding
-                )
+                # Prefer REDIS_URL if provided (for Upstash, Render, etc.)
+                if redis_url:
+                    self.redis_client = redis.from_url(
+                        redis_url,
+                        decode_responses=False,
+                        ssl_cert_reqs=None  # Accept self-signed certs for Upstash
+                    )
+                    print(f"✅ Connecting to Redis via URL...")
+                else:
+                    self.redis_client = redis.Redis(
+                        host=redis_host,
+                        port=redis_port,
+                        password=redis_password if redis_password else None,
+                        db=redis_db,
+                        decode_responses=False
+                    )
+                    print(f"✅ Connecting to Redis at {redis_host}:{redis_port}...")
+                
                 # Test connection
                 self.redis_client.ping()
                 self.enabled = True
-                print(f"✅ Semantic cache initialized (Redis: {redis_host}:{redis_port})")
+                print(f"✅ Semantic cache initialized successfully")
             except Exception as e:
                 print(f"⚠️  Redis connection failed: {e}. Caching disabled.")
                 self.redis_client = None
