@@ -27,7 +27,7 @@ onnxruntime>=1.20.0  # Explicitly specify a compatible version
 faiss-cpu>=1.7.4
 
 # Vector database
-chromadb>=0.4.13
+chromadb==0.3.29  # Last version compatible with Pydantic v1
 
 # ML & NLP
 sentence-transformers>=2.2.2
