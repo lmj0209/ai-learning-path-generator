@@ -66,8 +66,8 @@ class SemanticCache:
         # Initialize Redis
         if REDIS_AVAILABLE:
             try:
-                # Prefer REDIS_URL if provided (for Upstash, Render, etc.)
-                if redis_url:
+                # Prefer REDIS_URL if provided and valid (for Upstash, Render, etc.)
+                if redis_url and redis_url.strip() and redis_url.startswith(('redis://', 'rediss://', 'unix://')):
                     self.redis_client = redis.from_url(
                         redis_url,
                         decode_responses=False,

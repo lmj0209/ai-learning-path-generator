@@ -128,9 +128,28 @@ class DocumentStore:
         
         # Initialize shared embedding function (reuse across requests)
         if DocumentStore._shared_embedding_function is None:
-            print(f"--- DocumentStore.__init__: Initializing shared OpenAIEmbeddingFunction ---")
+            print(f"--- DocumentStore.__init__: Initializing custom embedding function ---")
             try:
-                DocumentStore._shared_embedding_function = embedding_functions.OpenAIEmbeddingFunction(
+                # Create custom embedding function compatible with OpenAI v1.x
+                from openai import OpenAI
+                
+                class CustomOpenAIEmbedding:
+                    def __init__(self, api_key, model_name="text-embedding-ada-002"):
+                        self.client = OpenAI(api_key=api_key)
+                        self.model_name = model_name
+                    
+                    def __call__(self, texts):
+                        """Generate embeddings for a list of texts."""
+                        if isinstance(texts, str):
+                            texts = [texts]
+                        
+                        response = self.client.embeddings.create(
+                            input=texts,
+                            model=self.model_name
+                        )
+                        return [item.embedding for item in response.data]
+                
+                DocumentStore._shared_embedding_function = CustomOpenAIEmbedding(
                     api_key=OPENAI_API_KEY,
                     model_name="text-embedding-ada-002"
                 )
@@ -873,8 +892,8 @@ class DocumentStore:
         """Get a cached learning path from Redis."""
         try:
             import redis
-            # Use REDIS_URL if available (for Upstash, Render, etc.)
-            if REDIS_URL:
+            # Use REDIS_URL if available and valid (for Upstash, Render, etc.)
+            if REDIS_URL and REDIS_URL.strip() and REDIS_URL.startswith(('redis://', 'rediss://', 'unix://')):
                 redis_client = redis.from_url(
                     REDIS_URL,
                     decode_responses=True,
@@ -907,8 +926,8 @@ class DocumentStore:
         """Cache a learning path in Redis."""
         try:
             import redis
-            # Use REDIS_URL if available (for Upstash, Render, etc.)
-            if REDIS_URL:
+            # Use REDIS_URL if available and valid (for Upstash, Render, etc.)
+            if REDIS_URL and REDIS_URL.strip() and REDIS_URL.startswith(('redis://', 'rediss://', 'unix://')):
                 redis_client = redis.from_url(
                     REDIS_URL,
                     decode_responses=True,
