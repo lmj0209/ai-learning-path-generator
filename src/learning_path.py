@@ -646,9 +646,8 @@ Return ONLY the JSON object, no markdown formatting or explanation.
                 
                 perplexity_results = search_resources(
                     contextualized_query, 
-                    k=3,  # Reduced from 5 to speed up
-                    trusted_sources=perplexity_sources,
-                    timeout=25  # 25 second timeout per search
+                    k=5,  # Get more resources for better variety
+                    trusted_sources=perplexity_sources
                 )
                 
                 if perplexity_results and len(perplexity_results) > 0:
@@ -687,8 +686,7 @@ Return ONLY the JSON object, no markdown formatting or explanation.
                 ]
         
         # Use ThreadPoolExecutor to fetch resources in parallel
-        # Reduced to 1 worker to avoid memory issues and timeouts on Render
-        with ThreadPoolExecutor(max_workers=1) as executor:
+        with ThreadPoolExecutor(max_workers=3) as executor:
             # Submit all tasks
             milestone_data = [(m, i+1) for i, m in enumerate(learning_path.milestones)]
             future_to_milestone = {
@@ -704,67 +702,63 @@ Return ONLY the JSON object, no markdown formatting or explanation.
         print(f"✅ All resources fetched!")
         
         # Validate all resources to ensure they're accessible
-        # Can be disabled with ENABLE_RESOURCE_VALIDATION=False for faster responses
-        enable_validation = os.getenv('ENABLE_RESOURCE_VALIDATION', 'true').lower() == 'true'
+        print(f"🔍 Validating resource URLs...")
+        all_resources_to_validate = []
+        for milestone in learning_path.milestones:
+            for resource in milestone.resources:
+                all_resources_to_validate.append({
+                    'url': resource.url,
+                    'title': resource.description,
+                    'type': resource.type
+                })
         
-        if enable_validation:
-            print(f"🔍 Validating resource URLs...")
-            all_resources_to_validate = []
-            for milestone in learning_path.milestones:
-                for resource in milestone.resources:
-                    all_resources_to_validate.append({
-                        'url': resource.url,
-                        'title': resource.description,
-                        'type': resource.type
-                    })
+        # Run validation asynchronously
+        try:
+            from src.utils.resource_validator import ResourceValidator
+            validator = ResourceValidator(cache_ttl_hours=24, max_retries=2)
             
-            # Run validation asynchronously with reduced timeout and retries
+            # Create event loop for async validation
+            import asyncio
             try:
-                from src.utils.resource_validator import ResourceValidator
-                validator = ResourceValidator(cache_ttl_hours=24, max_retries=1)  # Reduced from 2 to 1
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            
+            validated_resources = loop.run_until_complete(
+                validator.validate_resources(all_resources_to_validate)
+            )
+            
+            # Update milestones with validation results and filter out invalid resources
+            resource_index = 0
+            for milestone in learning_path.milestones:
+                validated_milestone_resources = []
+                for resource in milestone.resources:
+                    if resource_index < len(validated_resources):
+                        validation = validated_resources[resource_index].get('validation', {})
+                        
+                        # Only keep resources with high confidence (valid or temporarily unavailable)
+                        if validation.get('valid', False) or validation.get('confidence', 0) >= 0.5:
+                            validated_milestone_resources.append(resource)
+                            if not validation.get('valid'):
+                                print(f"  ⚠️  Keeping potentially valid resource: {resource.url[:50]}... (confidence: {validation.get('confidence')})")
+                        else:
+                            print(f"  ❌ Filtered out invalid resource: {resource.url[:50]}... ({validation.get('error', 'unknown error')})")
+                        
+                        resource_index += 1
                 
-                # Create event loop for async validation
-                import asyncio
-                try:
-                    loop = asyncio.get_event_loop()
-                except RuntimeError:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                
-                validated_resources = loop.run_until_complete(
-                    validator.validate_resources(all_resources_to_validate)
-                )
-                
-                # Update milestones with validation results and filter out invalid resources
-                resource_index = 0
-                for milestone in learning_path.milestones:
-                    validated_milestone_resources = []
-                    for resource in milestone.resources:
-                        if resource_index < len(validated_resources):
-                            validation = validated_resources[resource_index].get('validation', {})
-                            
-                            # Only keep resources with high confidence (valid or temporarily unavailable)
-                            if validation.get('valid', False) or validation.get('confidence', 0) >= 0.5:
-                                validated_milestone_resources.append(resource)
-                                if not validation.get('valid'):
-                                    print(f"  ⚠️  Keeping potentially valid resource: {resource.url[:50]}... (confidence: {validation.get('confidence')})")
-                            else:
-                                print(f"  ❌ Filtered out invalid resource: {resource.url[:50]}... ({validation.get('error', 'unknown error')})")
-                            
-                            resource_index += 1
-                    
-                    # Update milestone with validated resources
-                    milestone.resources = validated_milestone_resources
-                
-                # Get validation stats
-                stats = validator.get_validation_stats()
-                print(f"✅ Validation complete: {stats['valid_count']}/{stats['total_checked']} resources valid ({stats['success_rate']}%)")
-                
-            except Exception as e:
-                print(f"⚠️  Resource validation failed: {e}")
-                print(f"   Continuing with unvalidated resources...")
-                import traceback
-                traceback.print_exc()
+                # Update milestone with validated resources
+                milestone.resources = validated_milestone_resources
+            
+            # Get validation stats
+            stats = validator.get_validation_stats()
+            print(f"✅ Validation complete: {stats['valid_count']}/{stats['total_checked']} resources valid ({stats['success_rate']}%)")
+            
+        except Exception as e:
+            print(f"⚠️  Resource validation failed: {e}")
+            print(f"   Continuing with unvalidated resources...")
+            import traceback
+            traceback.print_exc()
 
         topic_weights = {
             milestone.title: milestone.estimated_hours
