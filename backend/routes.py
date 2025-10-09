@@ -57,10 +57,18 @@ def generate_path():
         redis_client.set(payload_key, json.dumps(data))
         redis_client.expire(payload_key, 86400)
         
-        # Queue the task (Celery will be configured later)
-        # For now, just mark as queued
-        from worker.tasks import generate_learning_path_task
-        generate_learning_path_task.delay(task_id, data)
+        # Queue the task via Celery
+        try:
+            from worker.celery_app import celery_app
+            celery_app.send_task(
+                'worker.tasks.generate_learning_path_task',
+                args=[task_id, data]
+            )
+        except Exception as e:
+            print(f"Failed to queue task: {e}")
+            # If Celery isn't available, just mark as queued
+            # Worker will pick it up when it starts
+            pass
         
         return jsonify({
             "task_id": task_id,
