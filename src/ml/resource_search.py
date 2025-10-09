@@ -169,12 +169,9 @@ def search_resources(query: str, k: int = 3, timeout: int = 45, trusted_sources:
 
     obs_manager = get_observability_manager()
 
-    # Check if Perplexity is enabled (can be disabled for faster responses)
-    perplexity_enabled = os.getenv("ENABLE_PERPLEXITY_SEARCH", "true").lower() == "true"
-    
     # Try Perplexity first (real-time web search)
     perplexity_key = os.getenv("PERPLEXITY_API_KEY")
-    if perplexity_key and perplexity_enabled:
+    if perplexity_key:
         try:
             logging.info("Searching for resources using Perplexity (web search)...")
             client = OpenAI(
