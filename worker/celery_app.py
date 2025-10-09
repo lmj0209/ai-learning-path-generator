@@ -2,7 +2,6 @@
 Celery application configuration
 """
 import os
-import ssl
 from celery import Celery
 from dotenv import load_dotenv
 
@@ -29,13 +28,6 @@ celery_app = Celery(
     backend=REDIS_URL,
     include=['tasks']
 )
-
-if REDIS_URL and REDIS_URL.startswith('rediss://'):
-    ssl_options = {'ssl_cert_reqs': ssl.CERT_NONE}
-    celery_app.conf.update(
-        broker_use_ssl=ssl_options,
-        redis_backend_use_ssl=ssl_options
-    )
 
 # Celery configuration
 celery_app.conf.update(

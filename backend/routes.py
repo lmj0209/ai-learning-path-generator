@@ -59,12 +59,9 @@ def generate_path():
         
         # Queue the task via Celery
         try:
-            from celery import Celery
-            import os
-            REDIS_URL = os.getenv('REDIS_URL')
-            celery_client = Celery('learning_path_worker', broker=REDIS_URL, backend=REDIS_URL)
-            celery_client.send_task(
-                'tasks.generate_learning_path_task',
+            from worker.celery_app import celery_app
+            celery_app.send_task(
+                'worker.tasks.generate_learning_path_task',
                 args=[task_id, data]
             )
         except Exception as e:

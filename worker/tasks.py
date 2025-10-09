@@ -12,7 +12,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from celery_app import celery_app
+from worker.celery_app import celery_app
 import redis
 from dotenv import load_dotenv
 
@@ -42,7 +42,7 @@ def update_task_status(task_id, status, progress, message):
     })
 
 
-@celery_app.task(bind=True, name='tasks.generate_learning_path_task')
+@celery_app.task(bind=True, name='worker.tasks.generate_learning_path_task')
 def generate_learning_path_task(self, task_id, payload):
     """
     Generate a learning path using existing logic
