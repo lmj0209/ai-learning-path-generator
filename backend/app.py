@@ -14,7 +14,7 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for Vercel frontend
 
 # Import routes
-from backend.routes import api_bp
+from routes import api_bp
 app.register_blueprint(api_bp, url_prefix='/api')
 
 @app.route('/health')
