@@ -48,7 +48,7 @@ class ResourceValidator:
     async def validate_url(
         self, 
         url: str, 
-        timeout: int = 10
+        timeout: int = 5
     ) -> Dict[str, any]:
         """
         Validate a single URL with platform-specific logic.
