@@ -645,8 +645,9 @@ Return ONLY the JSON object, no markdown formatting or explanation.
                 
                 perplexity_results = search_resources(
                     contextualized_query, 
-                    k=5,  # Get more resources for better variety
-                    trusted_sources=perplexity_sources
+                    k=3,  # Reduced from 5 to speed up
+                    trusted_sources=perplexity_sources,
+                    timeout=25  # 25 second timeout per search
                 )
                 
                 if perplexity_results and len(perplexity_results) > 0:
@@ -685,7 +686,8 @@ Return ONLY the JSON object, no markdown formatting or explanation.
                 ]
         
         # Use ThreadPoolExecutor to fetch resources in parallel
-        with ThreadPoolExecutor(max_workers=3) as executor:
+        # Reduced to 1 worker to avoid memory issues and timeouts on Render
+        with ThreadPoolExecutor(max_workers=1) as executor:
             # Submit all tasks
             milestone_data = [(m, i+1) for i, m in enumerate(learning_path.milestones)]
             future_to_milestone = {
