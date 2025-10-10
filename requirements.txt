@@ -47,8 +47,7 @@ aiohttp>=3.9.0
 
 # Caching
 redis>=4.6.0
-rq>=1.16.0
-rq-dashboard-latest>=0.2.2
+rq==1.16.1
 
 # Observability & Monitoring
 langsmith<0.1.0,>=0.0.21  # LLM tracing and debugging (compatible with langchain 0.0.267)
