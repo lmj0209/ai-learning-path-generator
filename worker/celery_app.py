@@ -26,7 +26,7 @@ celery_app = Celery(
     'learning_path_worker',
     broker=REDIS_URL,
     backend=REDIS_URL,
-    include=['tasks']
+    include=['worker.tasks']
 )
 
 # Celery configuration

@@ -1,4 +1,6 @@
 import os
+import redis
+from rq import Queue
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -28,6 +30,18 @@ def create_app(config_class=Config):
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
+
+    # Initialize Redis connection for RQ
+    try:
+        redis_url = os.environ.get('REDIS_URL')
+        if not redis_url:
+            raise ValueError("REDIS_URL not set, worker queue will not be available.")
+        # ssl_cert_reqs=None is important for managed services like Upstash/Render Redis
+        app.redis = redis.from_url(redis_url, ssl_cert_reqs=None)
+        app.logger.info("Redis connection for RQ initialized successfully.")
+    except Exception as e:
+        app.logger.error(f"Failed to initialize Redis connection: {e}")
+        app.redis = None
 
     # Import and register blueprints
     from web_app.main_routes import bp as main_bp

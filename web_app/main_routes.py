@@ -206,6 +206,71 @@ def generate_path():
 
 
 # ============================================
+# API ENDPOINT FOR BACKGROUND TASK CREATION (RQ)
+# ============================================
+
+@bp.route('/api/generate-task', methods=['POST'])
+def generate_task():
+    """
+    Enqueues a learning path generation task to the RQ worker.
+    Returns a task ID for the client to poll for status.
+    """
+    try:
+        data = request.json
+        topic = data.get('topic')
+        if not topic:
+            return jsonify({'error': 'Topic is required'}), 400
+
+        # Get the Redis connection from the app context (will be set up in create_app)
+        redis_conn = current_app.redis
+        q = Queue('learning-paths', connection=redis_conn)
+
+        # Enqueue the job to the worker
+        # The function to execute is passed as a string to avoid import issues
+        job = q.enqueue('worker.tasks.generate_learning_path_for_worker', data)
+
+        current_app.logger.info(f"Enqueued job {job.id} for topic '{topic}'")
+
+        # Return the job ID to the client
+        return jsonify({'task_id': job.id}), 202
+
+    except Exception as e:
+        current_app.logger.error(f"Error in /api/generate-task: {str(e)}")
+        return jsonify({'error': 'Failed to create task'}), 500
+
+
+@bp.route('/api/task-status/<task_id>', methods=['GET'])
+def task_status(task_id):
+    """
+    Checks the status of an RQ job.
+    Returns the job status and, if finished, the result.
+    """
+    try:
+        redis_conn = current_app.redis
+        q = Queue('learning-paths', connection=redis_conn)
+        job = q.fetch_job(task_id)
+
+        if job is None:
+            return jsonify({'status': 'not found'}), 404
+
+        response = {
+            'task_id': job.id,
+            'status': job.get_status(),
+        }
+
+        if job.is_finished:
+            response['result'] = job.result
+        elif job.is_failed:
+            response['error'] = str(job.exc_info)
+
+        return jsonify(response)
+
+    except Exception as e:
+        current_app.logger.error(f"Error fetching task status for {task_id}: {str(e)}")
+        return jsonify({'error': 'Failed to fetch task status'}), 500
+
+
+# ============================================
 # SERVER-SENT EVENTS (SSE) STREAMING ENDPOINT
 # ============================================
 
