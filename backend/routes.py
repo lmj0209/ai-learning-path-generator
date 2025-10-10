@@ -5,6 +5,7 @@ import os
 import uuid
 import json
 from flask import Blueprint, request, jsonify
+from rq import Queue
 from datetime import datetime
 import redis
 
@@ -25,8 +26,8 @@ else:
 @api_bp.route('/generate', methods=['POST'])
 def generate_path():
     """
-    Queue a learning path generation task
-    Returns task_id immediately
+    Queue a learning path generation task using RQ.
+    Returns the job ID immediately.
     """
     try:
         data = request.get_json()
@@ -37,41 +38,12 @@ def generate_path():
             if field not in data:
                 return jsonify({"error": f"Missing required field: {field}"}), 400
         
-        # Generate unique task ID
-        task_id = str(uuid.uuid4())
-        
-        # Store task metadata in Redis
-        task_key = f"task:{task_id}:meta"
-        redis_client.hset(task_key, mapping={
-            "status": "queued",
-            "progress": 0,
-            "message": "Task queued, waiting to start...",
-            "created_at": datetime.utcnow().isoformat(),
-            "topic": data['topic'],
-            "expertise_level": data['expertise_level']
-        })
-        redis_client.expire(task_key, 86400)  # 24 hour TTL
-        
-        # Store task payload
-        payload_key = f"task:{task_id}:payload"
-        redis_client.set(payload_key, json.dumps(data))
-        redis_client.expire(payload_key, 86400)
-        
-        # Queue the task via Celery
-        try:
-            from worker.celery_app import celery_app
-            celery_app.send_task(
-                'worker.tasks.generate_learning_path_task',
-                args=[task_id, data]
-            )
-        except Exception as e:
-            print(f"Failed to queue task: {e}")
-            # If Celery isn't available, just mark as queued
-            # Worker will pick it up when it starts
-            pass
+        # Enqueue job on RQ queue
+        q = Queue('learning-paths', connection=redis_client)
+        job = q.enqueue('worker.tasks.generate_learning_path_for_worker', data)
         
         return jsonify({
-            "task_id": task_id,
+            "task_id": job.id,
             "status": "queued",
             "message": "Learning path generation started"
         }), 202
@@ -83,24 +55,23 @@ def generate_path():
 @api_bp.route('/status/<task_id>', methods=['GET'])
 def get_status(task_id):
     """
-    Get the current status of a task
+    Get the current status of an RQ job
     """
     try:
-        task_key = f"task:{task_id}:meta"
-        task_data = redis_client.hgetall(task_key)
-        
-        if not task_data:
+        q = Queue('learning-paths', connection=redis_client)
+        job = q.fetch_job(task_id)
+        if job is None:
             return jsonify({"error": "Task not found"}), 404
         
-        return jsonify({
-            "task_id": task_id,
-            "status": task_data.get('status', 'unknown'),
-            "progress": int(task_data.get('progress', 0)),
-            "message": task_data.get('message', ''),
-            "created_at": task_data.get('created_at'),
-            "finished_at": task_data.get('finished_at')
-        }), 200
-        
+        resp = {
+            "task_id": job.id,
+            "status": job.get_status()
+        }
+        if job.is_finished:
+            resp["result"] = job.result
+        if job.is_failed:
+            resp["error"] = str(job.exc_info)
+        return jsonify(resp), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -108,39 +79,20 @@ def get_status(task_id):
 @api_bp.route('/result/<task_id>', methods=['GET'])
 def get_result(task_id):
     """
-    Get the final result of a completed task
+    Get the final result of an RQ job
     """
     try:
-        # Check task status first
-        task_key = f"task:{task_id}:meta"
-        task_data = redis_client.hgetall(task_key)
-        
-        if not task_data:
+        q = Queue('learning-paths', connection=redis_client)
+        job = q.fetch_job(task_id)
+        if job is None:
             return jsonify({"error": "Task not found"}), 404
         
-        status = task_data.get('status')
-        
-        if status == 'processing' or status == 'queued':
+        if not job.is_finished:
             return jsonify({
                 "error": "Task not yet complete",
-                "status": status,
-                "progress": int(task_data.get('progress', 0))
+                "status": job.get_status()
             }), 202
         
-        if status == 'failed':
-            return jsonify({
-                "error": "Task failed",
-                "message": task_data.get('error_message', 'Unknown error')
-            }), 500
-        
-        # Get result
-        result_key = f"task:{task_id}:result"
-        result_data = redis_client.get(result_key)
-        
-        if not result_data:
-            return jsonify({"error": "Result not found"}), 404
-        
-        return jsonify(json.loads(result_data)), 200
-        
+        return jsonify(job.result), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

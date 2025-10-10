@@ -1,7 +1,7 @@
 # Worker requirements (includes all heavy dependencies)
 python-dotenv==1.0.1
 redis>=5.0.0
-celery>=5.3.0
+rq==1.16.1
 
 # All existing dependencies from main requirements.txt
 pydantic==1.10.18
