@@ -162,7 +162,8 @@ class LearningPathGenerator:
         self.document_store = DocumentStore()
         self.output_parser = PydanticOutputParser(pydantic_object=LearningPath)
         self.obs_manager = get_observability_manager()
-        self.semantic_cache = SemanticCache()
+        # Pass REDIS_URL from environment to SemanticCache
+        self.semantic_cache = SemanticCache(redis_url=os.getenv('REDIS_URL'))
 
     def fetch_job_market_data(
         self,
