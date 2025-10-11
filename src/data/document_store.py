@@ -26,6 +26,7 @@ from langchain.schema import Document
 from src.utils.config import (
     VECTOR_DB_PATH, 
     OPENAI_API_KEY,
+    EMBEDDING_MODEL,
     # Advanced RAG config
     ENABLE_SEMANTIC_CACHE,
     QUERY_REWRITE_ENABLED,
@@ -151,7 +152,7 @@ class DocumentStore:
                 
                 DocumentStore._shared_embedding_function = CustomOpenAIEmbedding(
                     api_key=OPENAI_API_KEY,
-                    model_name="text-embedding-ada-002"
+                    model_name=EMBEDDING_MODEL
                 )
                 print("✅ Shared embedding function initialized")
             except Exception as e:

@@ -16,6 +16,9 @@ RUN pip install --no-cache-dir -r worker/requirements.txt
 # Copy worker code
 COPY worker/ /app/worker/
 
+# Copy the root-level worker entrypoint
+COPY worker.py /app/worker.py
+
 # Copy src directory (all the heavy logic)
 COPY src/ /app/src/
 
@@ -25,4 +28,5 @@ COPY .env* /app/
 # Create vector_db directory
 RUN mkdir -p /app/vector_db
 
-CMD ["celery", "-A", "worker.celery_app", "worker", "--loglevel=info", "--concurrency=1"]
+# Run RQ worker for the 'learning-paths' queue
+CMD ["python", "/app/worker.py"]

@@ -24,6 +24,10 @@ try:
 except ImportError:
     OPENAI_AVAILABLE = False
 
+try:
+    from src.utils.config import EMBEDDING_MODEL
+except Exception:
+    EMBEDDING_MODEL = "text-embedding-3-small"
 
 class SemanticCache:
     """
@@ -119,7 +123,7 @@ class SemanticCache:
         
         try:
             response = self.openai_client.embeddings.create(
-                model="text-embedding-ada-002",
+                model=EMBEDDING_MODEL,
                 input=text
             )
             embedding = np.array(response.data[0].embedding)
