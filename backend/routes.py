@@ -14,7 +14,12 @@ api_bp = Blueprint('api', __name__)
 # Redis connection
 REDIS_URL = os.getenv('REDIS_URL')
 if REDIS_URL and REDIS_URL.startswith(('redis://', 'rediss://')):
-    redis_client = redis.from_url(REDIS_URL, decode_responses=True, ssl_cert_reqs=None)
+    if REDIS_URL.startswith('rediss://'):
+        # TLS endpoint: allow self-signed certs if provider uses them
+        redis_client = redis.from_url(REDIS_URL, decode_responses=True, ssl_cert_reqs=None)
+    else:
+        # Non-TLS endpoint: do not pass TLS-only kwargs
+        redis_client = redis.from_url(REDIS_URL, decode_responses=True)
 else:
     redis_client = redis.Redis(
         host=os.getenv('REDIS_HOST', 'localhost'),

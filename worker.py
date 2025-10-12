@@ -13,9 +13,11 @@ if not redis_url:
     raise RuntimeError("REDIS_URL environment variable not set.")
 
 # Establish Redis connection
-# The ssl_cert_reqs=None is used for services like Upstash that use self-signed certs.
-# For other Redis providers, you might remove this.
-conn = redis.from_url(redis_url, ssl_cert_reqs=None)
+# Only pass ssl_cert_reqs for TLS endpoints
+if redis_url.startswith('rediss://'):
+    conn = redis.from_url(redis_url, ssl_cert_reqs=None)
+else:
+    conn = redis.from_url(redis_url)
 
 if __name__ == '__main__':
     with Connection(conn):
