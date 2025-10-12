@@ -7,6 +7,7 @@ from flask_login import current_user, login_required
 from web_app.models import db, UserLearningPath, LearningProgress, ChatMessage, ResourceProgress
 import uuid
 import time
+from rq import Queue
 from werkzeug.utils import secure_filename
 from pydantic import ValidationError as PydanticValidationError
 
@@ -222,6 +223,9 @@ def generate_task():
             return jsonify({'error': 'Topic is required'}), 400
 
         # Get the Redis connection from the app context (will be set up in create_app)
+        if getattr(current_app, 'redis', None) is None:
+            current_app.logger.error('REDIS_URL not configured on web service; background queue unavailable')
+            return jsonify({'error': 'Background queue unavailable', 'detail': 'REDIS_URL not configured on web service'}), 503
         redis_conn = current_app.redis
         q = Queue('learning-paths', connection=redis_conn)
 
@@ -246,6 +250,8 @@ def task_status(task_id):
     Returns the job status and, if finished, the result.
     """
     try:
+        if getattr(current_app, 'redis', None) is None:
+            return jsonify({'error': 'Background queue unavailable', 'detail': 'REDIS_URL not configured on web service'}), 503
         redis_conn = current_app.redis
         q = Queue('learning-paths', connection=redis_conn)
         job = q.fetch_job(task_id)

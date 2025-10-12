@@ -131,23 +131,23 @@ curl http://localhost:5000/api/result/abc-123
 
 ### Backend API (Minimal)
 ```
-REDIS_URL=rediss://default:...@diverse-cricket-21376.upstash.io:6379
+REDIS_URL=redis://default:<PASSWORD>@<HOST>:<PORT>/0
 ```
 
 ### Worker (Full - Copy from .env)
 ```
-REDIS_URL=rediss://default:...@diverse-cricket-21376.upstash.io:6379
-OPENAI_API_KEY=sk-...
-PERPLEXITY_API_KEY=pplx-...
+REDIS_URL=redis://default:<PASSWORD>@<HOST>:<PORT>/0
+OPENAI_API_KEY=YOUR_OPENAI_API_KEY
+PERPLEXITY_API_KEY=YOUR_PERPLEXITY_API_KEY
 WANDB_MODE=online
 USE_LOCAL_RERANKER=True
 QUERY_REWRITE_ENABLED=True
 CONTEXTUAL_COMPRESSION_ENABLED=True
 RERANK_ENABLED=True
 LANGCHAIN_TRACING_V2=true
-LANGCHAIN_API_KEY=lsv2_...
+LANGCHAIN_API_KEY=YOUR_LANGCHAIN_API_KEY
 LANGCHAIN_PROJECT=ai-learning-path-generator
-COHERE_API_KEY=...
+COHERE_API_KEY=YOUR_COHERE_API_KEY
 # ... all other configs from .env
 ```
 

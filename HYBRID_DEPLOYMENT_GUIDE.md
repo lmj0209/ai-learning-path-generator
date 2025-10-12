@@ -99,9 +99,9 @@ curl http://localhost:5000/api/result/abc-123-...
 
 3. **Environment Variables**
    ```
-   REDIS_URL=rediss://default:...@diverse-cricket-21376.upstash.io:6379
-   OPENAI_API_KEY=sk-...
-   PERPLEXITY_API_KEY=pplx-...
+   REDIS_URL=redis://default:<PASSWORD>@<HOST>:<PORT>/0
+   OPENAI_API_KEY=YOUR_OPENAI_API_KEY
+   PERPLEXITY_API_KEY=YOUR_PERPLEXITY_API_KEY
    ```
 
 4. **Deploy** → Wait for build
@@ -120,9 +120,9 @@ curl http://localhost:5000/api/result/abc-123-...
 
 3. **Environment Variables** (same as backend + all ML configs)
    ```
-   REDIS_URL=rediss://default:...@diverse-cricket-21376.upstash.io:6379
-   OPENAI_API_KEY=sk-...
-   PERPLEXITY_API_KEY=pplx-...
+   REDIS_URL=redis://default:<PASSWORD>@<HOST>:<PORT>/0
+   OPENAI_API_KEY=YOUR_OPENAI_API_KEY
+   PERPLEXITY_API_KEY=YOUR_PERPLEXITY_API_KEY
    WANDB_MODE=online
    USE_LOCAL_RERANKER=True
    QUERY_REWRITE_ENABLED=True
