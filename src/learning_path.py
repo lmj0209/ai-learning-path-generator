@@ -640,10 +640,17 @@ Return ONLY the JSON object, no markdown formatting or explanation.
                         'youtube': trusted_sources.get('youtube', []),
                         'websites': trusted_sources.get('websites', [])
                     }
+                    print(f"  📚 Using curated sources:")
+                    if perplexity_sources.get('youtube'):
+                        print(f"     YouTube: {', '.join(perplexity_sources['youtube'][:3])}{'...' if len(perplexity_sources['youtube']) > 3 else ''}")
+                    if perplexity_sources.get('websites'):
+                        print(f"     Websites: {', '.join(perplexity_sources['websites'][:3])}{'...' if len(perplexity_sources['websites']) > 3 else ''}")
+                else:
+                    print(f"  ⚠️  No curated sources found for '{topic}' - using general search")
                 
                 # Use Perplexity to search within trusted sources
                 contextualized_query = f"{topic}: {milestone.title}"
-                print(f"  🔍 Searching with Perplexity in curated sources...")
+                print(f"  🔍 Searching with Perplexity...")
                 
                 perplexity_results = search_resources(
                     contextualized_query, 

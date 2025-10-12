@@ -134,12 +134,20 @@ def search_resources(query: str, k: int = 3, timeout: int = 45, trusted_sources:
         websites = trusted_sources.get('websites', [])
         
         if youtube_channels or websites:
-            source_instruction = "\n\nIMPORTANT - SEARCH ONLY IN THESE TRUSTED SOURCES:\n"
+            source_instruction = "\n\n🎯 CRITICAL - SEARCH ONLY IN THESE CURATED SOURCES:\n"
             if youtube_channels:
-                source_instruction += f"YouTube Channels: {', '.join(youtube_channels)}\n"
+                source_instruction += f"✅ APPROVED YouTube Channels (search ONLY these): {', '.join(youtube_channels)}\n"
+                source_instruction += "   - Go to each channel's videos page\n"
+                source_instruction += "   - Find videos that match the query topic\n"
+                source_instruction += "   - Return DIRECT video watch URLs (youtube.com/watch?v=...)\n"
             if websites:
-                source_instruction += f"Websites: {', '.join(websites)}\n"
-            source_instruction += "You MUST find resources ONLY from the above sources. Do not search elsewhere.\n"
+                source_instruction += f"✅ APPROVED Websites (search ONLY these): {', '.join(websites)}\n"
+                source_instruction += "   - Search within these domains for relevant content\n"
+                source_instruction += "   - Return direct article/tutorial URLs, not homepages\n"
+            source_instruction += "\n❌ FORBIDDEN: Do NOT search or suggest content from ANY other sources\n"
+            source_instruction += "❌ FORBIDDEN: Do NOT make up or hallucinate URLs\n"
+            source_instruction += "✅ REQUIRED: Every URL must be from the approved list above\n"
+            source_instruction += "✅ REQUIRED: Every URL must be a real, existing page you found by searching\n"
     
     prompt = (
         f"Search the web and find {k} real, working FREE learning resources SPECIFICALLY for: '{query}'. "

@@ -1,6 +1,42 @@
 # AI Learning Path Generator 🚀
 
-An intelligent full-stack web application that generates personalized learning paths using AI, built with Python, Flask, LangChain, and modern ML technologies. Features a stunning glassmorphic UI design with smooth animations and real-time interactive feedback.
+A production-ready full-stack application that generates personalized learning paths powered by AI. Built with a modern hybrid architecture: React frontend on Vercel, Flask API on Render, and background worker processing with real-time progress tracking.
+
+## 🏗️ Architecture (Phase 1 + 2 Complete)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         USER FLOW                               │
+└─────────────────────────────────────────────────────────────────┘
+
+User Browser (Vercel - React + Vite)
+        ↓
+    POST /api/generate
+        ↓
+Backend API (Render - Flask) → Queue Task → Redis
+        ↓                                      ↑
+    Returns task_id                           │
+        ↓                                      │
+    Poll /api/status/{task_id}                │
+        ↓                                      │
+Backend Worker (Render - Python + RQ) ────────┘
+        │
+        ├── OpenAI API (Path Generation)
+        ├── Perplexity API (Job Market Data)
+        └── Stores Result → Redis
+                ↓
+        GET /api/result/{task_id}
+                ↓
+        Display Learning Path
+```
+
+### Components
+
+- **Frontend (Phase 2)**: React + Vite + TailwindCSS + shadcn/ui → Deployed on Vercel
+- **Backend API (Phase 1)**: Flask REST API → Deployed on Render
+- **Worker (Phase 1)**: RQ background worker → Deployed on Render
+- **Queue/Cache**: Redis → Hosted on Redis Cloud
+- **AI Services**: OpenAI GPT-4, Perplexity AI
 
 ## Overview
 
@@ -160,6 +196,65 @@ python run.py
 
 7. **Open your browser** and navigate to `http://localhost:5000`
 
+## 🚀 Phase 2: Modern React Frontend
+
+A production-ready React frontend with real-time progress tracking and beautiful glassmorphic UI.
+
+### Quick Start (Frontend)
+
+```powershell
+# Navigate to frontend
+cd frontend
+
+# Install dependencies
+npm install
+
+# Create .env file
+Copy-Item .env.example .env
+
+# Edit .env with your API URL:
+# VITE_API_URL=http://localhost:5000  (for local development)
+# VITE_API_URL=https://ai-learning-path-api.onrender.com  (for production)
+
+# Start development server
+npm run dev
+
+# Open browser to http://localhost:3000
+```
+
+Or use the automated setup script:
+```powershell
+cd frontend
+.\setup.ps1
+```
+
+### Frontend Features
+
+- ✨ **Real-time Progress Tracking** - Watch your path being generated live
+- 🎨 **Glassmorphic Design** - Modern UI with backdrop blur effects
+- 📱 **Fully Responsive** - Works on desktop, tablet, and mobile
+- 💼 **Job Market Insights** - Salary data, open positions, and careers
+- 📥 **Export Functionality** - Download learning paths as JSON
+- ⚡ **Lightning Fast** - Vite build tool for instant HMR
+
+### Frontend Tech Stack
+
+- React 18 + Vite 5
+- TailwindCSS 3 + shadcn/ui
+- Axios for API calls
+- Lucide React for icons
+
+### Deployment
+
+**Deploy to Vercel:**
+1. Push to GitHub
+2. Import repo to Vercel
+3. Set root directory to `frontend`
+4. Add env var: `VITE_API_URL=https://ai-learning-path-api.onrender.com`
+5. Deploy!
+
+See `PHASE2_DEPLOYMENT_GUIDE.md` for complete instructions.
+
 ## Project Structure
 
 ```
@@ -182,26 +277,48 @@ ai-learning-path-generator/
 │       ├── config.py             # Configuration management
 │       └── helpers.py            # Helper functions
 │
-├── web_app/                      # Flask web application
+├── backend/                      # Phase 1: Backend API (Flask)
+│   ├── app.py                    # Main Flask app
+│   ├── routes.py                 # API endpoints (/generate, /status, /result)
+│   ├── requirements.txt          # Minimal dependencies
+│   ├── Procfile                  # Render deployment config
+│   └── Dockerfile                # Docker configuration
+│
+├── worker/                       # Phase 1: Background Worker (RQ)
+│   ├── celery_app.py             # RQ/Celery configuration
+│   ├── tasks.py                  # Task definitions (generate_learning_path)
+│   ├── requirements.txt          # All ML/AI dependencies
+│   ├── Procfile                  # Render worker config
+│   └── Dockerfile                # Docker configuration
+│
+├── frontend/                     # Phase 2: React Frontend (NEW!)
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── ui/               # shadcn/ui components
+│   │   │   ├── LearningPathForm.jsx    # Input form
+│   │   │   ├── ProgressTracker.jsx     # Real-time progress
+│   │   │   └── LearningPathResult.jsx  # Results display
+│   │   ├── lib/
+│   │   │   ├── api.js            # API client
+│   │   │   └── utils.js          # Utilities
+│   │   ├── App.jsx               # Main app
+│   │   ├── main.jsx              # Entry point
+│   │   └── index.css             # Global styles
+│   ├── package.json              # Dependencies
+│   ├── vite.config.js            # Vite config
+│   ├── tailwind.config.js        # TailwindCSS config
+│   ├── vercel.json               # Vercel deployment
+│   ├── setup.ps1                 # Windows setup script
+│   └── README.md                 # Frontend docs
+│
+├── web_app/                      # Legacy: Flask web application
 │   ├── __init__.py               # App factory (create_app)
 │   ├── app.py                    # Legacy entry point
-│   ├── models.py                 # Database models (User, UserLearningPath, LearningProgress, ChatMessage)
-│   ├── main_routes.py            # Main application routes (includes /direct_chat, /generate-stream)
-│   ├── auth_routes.py            # Authentication routes with AJAX endpoints
-│   ├── auth_forms.py             # Authentication forms with validation
-│   ├── google_oauth.py           # Google OAuth integration
+│   ├── models.py                 # Database models
+│   ├── main_routes.py            # Main routes
+│   ├── auth_routes.py            # Authentication routes
 │   ├── static/                   # Static assets
-│   │   ├── css/
-│   │   │   └── glassmorphic.css  # Complete glassmorphic design system
-│   │   └── js/
-│   │       ├── sse-progress.js   # Server-Sent Events progress handler
-│   │       └── theme.js          # Theme and interaction logic
 │   └── templates/                # HTML templates (Jinja2)
-│       ├── index.html            # Landing page with interactive chat & SSE progress
-│       ├── result.html           # Learning path results with collapsible chatbot
-│       ├── dashboard.html        # User dashboard with glass cards
-│       ├── login.html            # Glassmorphic login page
-│       └── register.html         # Registration with real-time validation
 │
 ├── migrations/                   # Database migrations (Alembic)
 ├── vector_db/                    # Vector database storage (ChromaDB)
@@ -486,17 +603,32 @@ The application is production-ready and can be deployed to Render.com with Redis
 | **Recommended** | $7 (Starter) | $7 (256MB) | SQLite | $14 |
 | **Full Production** | $7 (Starter) | $7 (256MB) | $7 (PostgreSQL) | $21 |
 
-#### Deployment Files:
+#### Deployment Documentation:
 
+**Phase 1 (Backend + Worker):**
 | File | Purpose |
 |------|---------|
-| `Procfile` | Gunicorn configuration for Render |
-| `requirements.txt` | Python dependencies |
-| `run.py` | Application entry point |
-| `config.py` | Environment-aware configuration |
-| `.env.example` | Template for environment variables |
-| `.gitignore` | Prevents committing sensitive files |
-| `RENDER_DEPLOYMENT_GUIDE.md` | Complete deployment instructions |
+| `PHASE1_README.md` | Phase 1 implementation overview |
+| `HYBRID_DEPLOYMENT_GUIDE.md` | Deploy backend API and worker to Render |
+| `DEPLOYMENT_STATUS.md` | Current deployment status |
+| `backend/Procfile` | Backend API configuration |
+| `worker/Procfile` | Worker configuration |
+
+**Phase 2 (Frontend):**
+| File | Purpose |
+|------|---------|
+| `PHASE2_README.md` | Phase 2 implementation overview |
+| `PHASE2_DEPLOYMENT_GUIDE.md` | Deploy React frontend to Vercel |
+| `PHASE2_COMPLETE.md` | Phase 2 completion summary |
+| `frontend/README.md` | Frontend-specific documentation |
+| `frontend/vercel.json` | Vercel deployment config |
+| `frontend/setup.ps1` | Automated Windows setup script |
+
+**Legacy Files:**
+| File | Purpose |
+|------|---------|
+| `Procfile` | Legacy monolithic deployment |
+| `RENDER_DEPLOYMENT_GUIDE.md` | Legacy deployment instructions |
 | `RENDER_ENV_VARIABLES.md` | Environment variables reference |
 | `PRE_DEPLOYMENT_CHECKLIST.md` | Pre-deployment checklist |
 
