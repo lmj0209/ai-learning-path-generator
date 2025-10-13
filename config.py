@@ -6,6 +6,9 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 if not os.environ.get('RENDER'):
     load_dotenv(os.path.join(basedir, '.env'))
 
+# Set Flask app for CLI commands (needed for flask db upgrade)
+os.environ.setdefault('FLASK_APP', 'run.py')
+
 class Config:
     SECRET_KEY = os.environ.get('FLASK_SECRET_KEY') or 'dev-secret-key-change-in-production-2024'
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
