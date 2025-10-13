@@ -12,6 +12,8 @@ eggs/
 .eggs/
 lib/
 lib64/
+!frontend/src/lib/
+!frontend/src/lib/**
 parts/
 sdist/
 var/
@@ -150,4 +152,3 @@ MISSING_*.md
 
 # Old/unused directories
 ai learning path generator/
-frontend/
