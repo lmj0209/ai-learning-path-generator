@@ -157,10 +157,10 @@ def generate_path():
         path_id = path_data.get('id', str(uuid.uuid4()))
         path_data['id'] = path_id
         
-        # Store in session for both logged-in and anonymous users
-        session['current_path'] = path_data
+        # Store only the path_id in session (not the entire path_data to avoid cookie size issues)
+        session['current_path_id'] = path_id
         session.modified = True
-        current_app.logger.info(f'Stored path in session with ID: {path_id}')
+        current_app.logger.info(f'Stored path ID in session: {path_id}')
         
         # For logged-in users, automatically save to database
         if current_user.is_authenticated:
@@ -378,10 +378,10 @@ def generate_stream():
             yield f"data: {json.dumps({'progress': 80, 'message': 'Adding career insights and job market data...'})}\n\n"
             time.sleep(0.3)
             
-            # Store in session and mark as modified
-            session['current_path'] = path_data
+            # Store only path_id in session (not entire path_data to avoid cookie size issues)
+            session['current_path_id'] = path_id
             session.modified = True
-            current_app.logger.info(f'SSE: Stored path in session with ID: {path_id}')
+            current_app.logger.info(f'SSE: Stored path ID in session: {path_id}')
             
             # For logged-in users, save to database
             if is_authenticated and user_id:
@@ -726,11 +726,25 @@ def result():
             path_data = user_path.path_data_json
             current_app.logger.info(f'Loaded path from database: {requested_id}')
 
-    # Fall back to session if not found in database
+    # Fall back to session path_id if not found in database
     if not path_data:
-        path_data = session.get('current_path')
-        if path_data:
-            current_app.logger.info('Loaded path from session')
+        session_path_id = session.get('current_path_id')
+        if session_path_id:
+            # Try to load from database using session path_id
+            if current_user.is_authenticated:
+                user_path = UserLearningPath.query.filter_by(
+                    user_id=current_user.id,
+                    id=session_path_id
+                ).first()
+                if user_path:
+                    path_data = user_path.path_data_json
+                    current_app.logger.info(f'Loaded path from database using session ID: {session_path_id}')
+            
+            # Fallback: check for old session format (temporary backward compatibility)
+            if not path_data:
+                path_data = session.get('current_path')
+                if path_data:
+                    current_app.logger.info('Loaded path from legacy session format')
 
     # If still not found, return to homepage
     if not path_data:
