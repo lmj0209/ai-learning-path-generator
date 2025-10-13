@@ -104,7 +104,7 @@ def google_callback():
         login_user(user, remember=True, duration=None)
         
         flash("Logged in with Google!", "success")
-        return redirect(url_for("main.index"))
+        return redirect("/")
         
     except Exception as e:
         logger.exception(f"Error in Google callback: {str(e)}")

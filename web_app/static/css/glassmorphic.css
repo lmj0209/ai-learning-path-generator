@@ -11,22 +11,22 @@
    ========================================================================== */
 
 :root {
-    /* Background Colors - Dark Theme */
-    --bg-primary: #0a0e27;
-    --bg-secondary: #13172e;
-    --bg-tertiary: #1a1f3a;
+    /* Background Colors - Dark Theme - Pink Glassmorphic */
+    --bg-primary: #0f0320;
+    --bg-secondary: #1a0b2e;
+    --bg-tertiary: #2d1b4e;
     
     /* Glass Effect */
-    --glass-bg: rgba(255, 255, 255, 0.04);
-    --glass-bg-hover: rgba(255, 255, 255, 0.07);
-    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-bg-hover: rgba(255, 255, 255, 0.08);
+    --glass-border: rgba(255, 80, 197, 0.2);
     --glass-blur: 20px;
     
-    /* Neon Colors */
-    --neon-cyan: #4ad8ff;
-    --neon-purple: #b37dff;
-    --neon-pink: #ff74c4;
-    --neon-green: #5cf2b1;
+    /* Neon Colors - Pink Gradient Theme */
+    --neon-cyan: #ff50c5;
+    --neon-purple: #c850ff;
+    --neon-pink: #ff50c5;
+    --neon-green: #ff8fe7;
     
     /* Text Colors */
     --text-primary: #ffffff;
@@ -39,8 +39,8 @@
     --status-error: #ff0051;
     
     /* Grid */
-    --grid-color: rgba(74, 216, 255, 0.08);
-    --grid-overlay: radial-gradient(circle at 50% 50%, transparent 0%, rgba(10, 14, 39, 0.8) 100%);
+    --grid-color: rgba(255, 80, 197, 0.1);
+    --grid-overlay: radial-gradient(circle at 50% 50%, transparent 0%, rgba(15, 3, 32, 0.9) 100%);
 
     color-scheme: dark;
 }
@@ -203,8 +203,8 @@ button {
 
 .glass-input:focus, .glass-select:focus {
     outline: none;
-    border-color: var(--neon-cyan);
-    box-shadow: 0 0 14px rgba(74, 216, 255, 0.35);
+    border-color: var(--neon-pink);
+    box-shadow: 0 0 14px rgba(255, 80, 197, 0.35);
 }
 
 .glass-input::placeholder {
@@ -245,23 +245,27 @@ button {
 
 .neon-btn {
     background: transparent;
-    border: 2px solid var(--neon-cyan);
-    color: var(--neon-cyan);
+    border: 2px solid var(--neon-pink);
+    color: var(--neon-pink);
     padding: 12px 32px;
     border-radius: 8px;
     font-weight: 600;
     font-size: 0.875rem;
     text-transform: uppercase;
     letter-spacing: 1px;
-    box-shadow: 0 0 16px rgba(74, 216, 255, 0.25);
+    box-shadow: 0 0 16px rgba(255, 80, 197, 0.3);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-color: var(--neon-purple);
-    color: var(--neon-purple);
-    box-shadow: 0 0 12px rgba(179, 125, 255, 0.2);
+}
+
+.neon-btn:hover {
+    background: var(--neon-pink);
+    color: #ffffff;
+    box-shadow: 0 0 26px rgba(255, 80, 197, 0.5);
+    transform: translateY(-2px);
 }
 
 .neon-btn-purple:hover {
@@ -279,14 +283,14 @@ button {
 .neon-btn-sm {
     padding: 8px 20px;
     font-size: 0.75rem;
-    border: 2px solid var(--neon-cyan);
-    color: var(--neon-cyan);
+    border: 2px solid var(--neon-pink);
+    color: var(--neon-pink);
     background: transparent;
     border-radius: 8px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    box-shadow: 0 0 12px rgba(74, 216, 255, 0.25);
+    box-shadow: 0 0 12px rgba(255, 80, 197, 0.25);
     transition: all 0.3s ease;
     cursor: pointer;
     text-decoration: none;
@@ -295,7 +299,9 @@ button {
 }
 
 .neon-btn-sm:hover {
-    box-shadow: 0 0 25px rgba(74, 216, 255, 0.5);
+    background: var(--neon-pink);
+    color: #ffffff;
+    box-shadow: 0 0 25px rgba(255, 80, 197, 0.5);
 }
 
 /* ==========================================================================
@@ -304,12 +310,13 @@ button {
    ========================================================================== */
 
 .grid-background {
-    background-color: var(--bg-primary);
+    background: linear-gradient(135deg, #0f0320 0%, #1a0b2e 25%, #2d1b4e 50%, #1a0b2e 75%, #0f0320 100%);
     background-image: 
+        linear-gradient(135deg, #0f0320 0%, #1a0b2e 25%, #2d1b4e 50%, #1a0b2e 75%, #0f0320 100%),
         linear-gradient(var(--grid-color) 1px, transparent 1px),
         linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-    background-size: 50px 50px;
-    background-position: center center;
+    background-size: 100% 100%, 50px 50px, 50px 50px;
+    background-position: center center, center center, center center;
     position: relative;
 }
 
@@ -320,7 +327,8 @@ button {
     left: 0;
     right: 0;
     bottom: 0;
-    background: var(--grid-overlay);
+    background: radial-gradient(circle at 20% 50%, rgba(255, 80, 197, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(200, 80, 255, 0.15) 0%, transparent 50%);
     pointer-events: none;
 }
 

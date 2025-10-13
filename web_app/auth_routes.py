@@ -14,7 +14,7 @@ bp = Blueprint('auth', __name__, template_folder='templates/auth')
 @bp.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
-        return redirect(url_for('main.index')) # Assuming 'main.index' is your main page route
+        return redirect('/') # Redirect to React homepage
     
     form = RegistrationForm()
     
@@ -41,14 +41,14 @@ def register():
         
         # Auto-login after registration for seamless experience
         login_user(user)
-        return redirect(url_for('main.index'))
+        return redirect('/')
         
     return render_template('register.html', title='Join the Community', form=form)
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
+        return redirect('/')
         
     form = LoginForm()
     
@@ -79,7 +79,7 @@ def login():
         # Redirect handling
         next_page = request.args.get('next')
         if not next_page or not next_page.startswith('/'): # Basic security check
-            next_page = url_for('main.index')
+            next_page = '/'
             
         return redirect(next_page)
         
@@ -104,7 +104,7 @@ def logout():
     ]
     
     flash(random.choice(goodbye_messages), 'info')
-    return redirect(url_for('main.index'))
+    return redirect('/')
 
 # This is needed by Flask-Login to load a user from the session
 @login_manager.user_loader 

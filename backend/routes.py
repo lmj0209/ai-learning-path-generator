@@ -9,7 +9,7 @@ from rq import Queue
 from datetime import datetime
 import redis
 
-api_bp = Blueprint('api', __name__)
+api_bp = Blueprint('rq_api', __name__)
 
 # Redis connection
 # Note: decode_responses=False is required for RQ (job results are pickled bytes, not strings)

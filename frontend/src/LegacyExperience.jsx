@@ -23,7 +23,7 @@ import {
 } from './components/ui/select';
 import ProgressTracker from './components/ProgressTracker';
 import LearningPathResult from './components/LearningPathResult';
-import { generateLearningPath, checkTaskStatus, getTaskResult } from './lib/api.js';
+import { generateLearningPath, checkTaskStatus, getTaskResult, API_BASE_URL } from './lib/api.js';
 
 const CATEGORY_TOPICS = {
   programming: [
@@ -259,11 +259,25 @@ function LegacyExperience() {
   return (
     <div className="min-h-screen py-10 px-4">
       <div className="max-w-6xl mx-auto">
-        <header className="text-center mb-14">
+        <header className="mb-6 flex items-center justify-between">
           <div className="inline-flex items-center justify-center gap-3 bg-white/15 border border-white/30 rounded-full px-5 py-2 text-white/90">
             <Wand2 className="w-5 h-5" />
             <span>Personalized learning in minutes</span>
           </div>
+          <div className="flex gap-2">
+            <a
+              href={`${API_BASE_URL}/login/google`}
+              className="px-3 py-2 text-white bg-white/10 border border-white/20 rounded-md hover:bg-white/20"
+            >
+              Sign in with Google
+            </a>
+            <a href={`${API_BASE_URL}/dashboard`} className="px-3 py-2 text-white bg-white/10 border border-white/20 rounded-md hover:bg-white/20">
+              Dashboard
+            </a>
+          </div>
+        </header>
+
+        <div className="text-center mb-10">
           <h1 className="mt-6 text-5xl md:text-6xl font-bold text-white drop-shadow-sm">
             Build a Learning Path You&apos;ll Stick With
           </h1>
@@ -289,7 +303,7 @@ function LegacyExperience() {
               Reset Form
             </Button>
           </div>
-        </header>
+        </div>
 
         {stage === 'form' && (
           <section id="legacy-form-section" className="mb-16">

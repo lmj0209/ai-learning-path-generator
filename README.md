@@ -1,42 +1,43 @@
 # AI Learning Path Generator 🚀
 
-A production-ready full-stack application that generates personalized learning paths powered by AI. Built with a modern hybrid architecture: React frontend on Vercel, Flask API on Render, and background worker processing with real-time progress tracking.
+A production-ready full-stack application that generates personalized learning paths powered by AI. Built with a modern hybrid architecture: React frontend on Vercel, and a Flask API with background workers on Render.
 
-## 🏗️ Architecture (Phase 1 + 2 Complete)
+## 🏗️ Architecture (Hybrid Deployment)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         USER FLOW                               │
 └─────────────────────────────────────────────────────────────────┘
 
-User Browser (Vercel - React + Vite)
+User Browser (React Frontend on Vercel)
         ↓
     POST /api/generate
         ↓
-Backend API (Render - Flask) → Queue Task → Redis
+Backend API (Flask on Render) → Queue Task → Redis
         ↓                                      ↑
     Returns task_id                           │
         ↓                                      │
-    Poll /api/status/{task_id}                │
+    Polls /api/status/{task_id}               │
         ↓                                      │
-Backend Worker (Render - Python + RQ) ────────┘
+Background Worker (RQ on Render) ────────────┘
         │
         ├── OpenAI API (Path Generation)
         ├── Perplexity API (Job Market Data)
-        └── Stores Result → Redis
+        └── Stores Result → PostgreSQL
                 ↓
         GET /api/result/{task_id}
                 ↓
-        Display Learning Path
+        Display Learning Path on Frontend
 ```
 
 ### Components
 
-- **Frontend (Phase 2)**: React + Vite + TailwindCSS + shadcn/ui → Deployed on Vercel
-- **Backend API (Phase 1)**: Flask REST API → Deployed on Render
-- **Worker (Phase 1)**: RQ background worker → Deployed on Render
+- **Frontend**: React + Vite + TailwindCSS → Deployed on **Vercel**
+- **Backend API**: Flask REST API → Deployed on **Render**
+- **Worker**: RQ background worker → Deployed on **Render**
 - **Queue/Cache**: Redis → Hosted on Redis Cloud
-- **AI Services**: OpenAI GPT-4, Perplexity AI
+- **Database**: PostgreSQL → Hosted on Render
+- **AI Services**: OpenAI GPT-4o-mini, Perplexity Sonar Pro
 
 ## Overview
 
@@ -69,13 +70,22 @@ The system combines OpenAI's language models with vector database technology and
 - 📊 **Personal dashboard** to track all your learning paths and progress
 - ✅ **Milestone tracking** with completion status and notes
 - 🗄️ **Archive paths** to keep your dashboard organized
-- 💬 **Interactive AI chatbot** with two modes (General Chat & Path Creation)
-- 📊 **Real-time SSE progress** with animated modal during path generation
-- 🎨 **Collapsible chat interface** on result pages with smooth animations
+- 💬 **Popup AI chatbot widget** with three modes:
+  - 💬 General Chat - Ask questions and get AI responses
+  - 🎯 Path Creation - Generate learning paths conversationally
+  - 🔍 Research - Explore skills, salaries, and career insights
+- 📊 **Animated progress card** during path generation with 4 stages:
+  - 🔍 Analyzing Requirements
+  - 🤖 AI Processing
+  - 📚 Curating Resources
+  - ✨ Finalizing Path
+- 🎨 **Collapsible skills database** with 2025 emerging AI roles
+- ✅ **Resource checkboxes** to track completion (saves to database)
 - 📱 **Responsive design** that works on desktop and mobile
 - ✨ **Real-time username availability** checking with AJAX validation
 - 🔐 **Password strength meter** with visual feedback
 - 🎯 **Smart username suggestions** based on email
+- 🌓 **Dark/Light theme toggle** with persistent preference
 
 ### Technical Features
 - 🔄 **Multiple AI provider support** (OpenAI primary, DeepSeek legacy support)
@@ -91,6 +101,23 @@ The system combines OpenAI's language models with vector database technology and
   - **Cost Tracking**: `llm_cost_usd` and `perplexity_cost_usd` to monitor spending.
   - **Performance**: `llm_latency_ms` and `perplexity_latency_ms` to track response times.
   - **Token Usage**: `llm_tokens`, `perplexity_prompt_tokens`, and `perplexity_completion_tokens`.
+
+## 🚀 Deployment Status
+
+### Production Services (Render)
+- ✅ **Backend API**: Deployed and running
+- ✅ **Background Worker**: Deployed and running  
+- ✅ **PostgreSQL Database**: Provisioned and connected
+- ✅ **Redis**: Connected to Redis Cloud
+- 🔄 **Frontend**: Ready to push to GitHub
+
+### Recent Updates
+- ✅ Popup AI chatbot widget integrated
+- ✅ Animated progress card for path generation
+- ✅ Collapsible skills database with emerging AI roles
+- ✅ Resource completion tracking with checkboxes
+- ✅ Dark/Light theme toggle
+- ✅ Mobile responsive design improvements
 
 ## Tech Stack
 
@@ -663,31 +690,43 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Recent Updates
 
-### Interactive Chat & SSE Progress (Latest - Oct 2025)
-- 💬 **Redesigned AI Chat Interface** - Eye-friendly purple-pink gradient theme
-- 🤖 **Two Chat Modes**: General chat and Interactive Path creation
-- 📊 **Real-time SSE Progress** - Live updates during path generation with animated modal
-- 🎨 **Unified Chatbot Design** - Consistent styling across homepage and result pages
-- ✅ **Collapsible Career Assistant** - Click header to toggle, smooth animations
-- 🌍 **English-Only Resources** - Enforced language constraints for all generated content
-- 🎨 **Dark Footer Theme** - Seamless dark theme throughout, no white sections
-- 🔧 **Fixed Template Errors** - Resolved Jinja syntax issues in result page
+### Latest Features (January 2025)
+- 💬 **Popup AI Chatbot Widget** - Bottom-right floating chat with 3 modes:
+  - General Chat for questions
+  - Path Creation for learning paths
+  - Research for skills and salaries
+- 📊 **Animated Progress Card** - Real-time visual feedback during path generation:
+  - 4-stage progress indicator
+  - Shimmer effects on progress bar
+  - Step-by-step status updates
+- 🎨 **Collapsible Skills Database** - Accordion UI with 2025 emerging AI roles:
+  - AI Ethics Specialist
+  - Prompt Engineer
+  - AI Safety Researcher
+  - Multimodal AI Developer
+  - And 20+ more roles
+- ✅ **Resource Completion Tracking** - Checkboxes on each resource:
+  - Saves to database for logged-in users
+  - LocalStorage fallback for guests
+  - Visual dimming when completed
+- 🌓 **Dark/Light Theme Toggle** - Persistent theme preference
+- 📱 **Mobile Responsive** - Optimized for all screen sizes
 
 ### UI/UX Enhancements
 - ✨ Complete glassmorphic design system implementation
-- 🎨 Softer color palette with comfortable rgba values (no harsh whites/blacks)
+- 🎨 Pink/purple/cyan neon color scheme
 - 📜 Custom gradient scrollbars with smooth scrolling
 - 🔄 Real-time AJAX username availability checking
 - 💪 Password strength meter with visual feedback
 - 🎯 Smart username suggestions from email
-- 🐛 Fixed SQLAlchemy migration issues for local development
-- 🔧 Updated AJAX endpoints to match frontend expectations
+- 🎭 Smooth animations and transitions throughout
 
 ### Database & Authentication
-- 🗄️ Added `last_seen` column to User model
-- 🔐 Enhanced registration form validation
-- 🔄 Improved OAuth flow with Google
-- 📝 Better error messages and user feedback
+- 🗄️ PostgreSQL with SQLAlchemy ORM
+- 🔐 Flask-Login authentication
+- 🔄 Google OAuth integration
+- 📝 Resource progress tracking table
+- 💾 Learning path persistence
 
 ## Troubleshooting
 

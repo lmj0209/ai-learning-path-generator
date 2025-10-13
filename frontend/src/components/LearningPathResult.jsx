@@ -15,9 +15,14 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
+import { saveLearningPath, trackMilestone } from '../lib/api';
 
 export default function LearningPathResult({ data, onReset }) {
   const [expandedMilestones, setExpandedMilestones] = useState([0]); // First milestone expanded by default
+  const [savedPathId, setSavedPathId] = useState(data?.id || null);
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+  const [completion, setCompletion] = useState({}); // { [index]: boolean }
 
   const toggleMilestone = (index) => {
     setExpandedMilestones(prev => 
@@ -26,6 +31,39 @@ export default function LearningPathResult({ data, onReset }) {
         : [...prev, index]
     );
   };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setSaveMessage('');
+      const resp = await saveLearningPath(data);
+      if (resp?.success) {
+        setSavedPathId(resp.path_id);
+        setSaveMessage('Saved to your account.');
+      } else {
+        setSaveMessage('Save failed. Please login and try again.');
+      }
+    } catch (e) {
+      setSaveMessage('Save failed. Are you logged in?');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleCompletion = async (index) => {
+    const next = !completion[index];
+    setCompletion((prev) => ({ ...prev, [index]: next }));
+    // Only attempt server update if we have a saved path id
+    if (!savedPathId) return;
+    try {
+      await trackMilestone(savedPathId, index, next);
+    } catch (e) {
+      // revert on error
+      setCompletion((prev) => ({ ...prev, [index]: !next }));
+    }
+  };
+
+  const displayText = (r) => r?.title || r?.description || r?.url;
 
   const downloadJSON = () => {
     const dataStr = JSON.stringify(data, null, 2);
@@ -51,8 +89,20 @@ export default function LearningPathResult({ data, onReset }) {
               <CardDescription className="text-white/80 text-base">
                 {data.description}
               </CardDescription>
+              {saveMessage && (
+                <div className="mt-2 text-sm text-white/80">{saveMessage}</div>
+              )}
             </div>
             <div className="flex gap-2">
+              <Button
+                variant="glass"
+                size="sm"
+                onClick={handleSave}
+                disabled={saving}
+                className="gap-2"
+              >
+                {saving ? 'Saving…' : (savedPathId ? 'Save (Update)' : 'Save Path')}
+              </Button>
               <Button
                 variant="glass"
                 size="sm"
@@ -207,11 +257,21 @@ export default function LearningPathResult({ data, onReset }) {
                     ⏱️ Estimated: {milestone.estimated_hours} hours
                   </div>
                 </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="glass"
+                    size="sm"
+                    onClick={(e) => { e.stopPropagation(); toggleCompletion(index); }}
+                  >
+                    {completion[index] ? 'Completed' : 'Mark Complete'}
+                  </Button>
+                
                 {expandedMilestones.includes(index) ? (
                   <ChevronUp className="w-5 h-5 text-white/60" />
                 ) : (
                   <ChevronDown className="w-5 h-5 text-white/60" />
                 )}
+                </div>
               </div>
             </CardHeader>
             
@@ -250,13 +310,13 @@ export default function LearningPathResult({ data, onReset }) {
                           <ExternalLink className="w-4 h-4 text-white/60 mt-1 group-hover:text-white" />
                           <div className="flex-1">
                             <p className="text-white font-medium group-hover:underline">
-                              {resource.title}
+                              {displayText(resource)}
                             </p>
-                            {resource.description && (
+                            {resource.description && resource.description !== resource.title && (
                               <p className="text-white/60 text-sm mt-1">{resource.description}</p>
                             )}
                             <p className="text-white/40 text-xs mt-1">
-                              {resource.type} • {resource.provider}
+                              {resource.type}{resource.provider ? ` • ${resource.provider}` : ''}
                             </p>
                           </div>
                         </a>

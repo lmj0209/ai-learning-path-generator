@@ -82,3 +82,72 @@ docker-compose.override.yml
 # Celery
 celerybeat-schedule
 celerybeat.pid
+
+# Temporary and test files
+test_*.py
+temp_*
+minimal_test.py
+fix_*.py
+clear_cache.py
+*.ps1
+
+# Documentation (keep only main README)
+*_FIX.md
+*_FIXES.md
+*_GUIDE.md
+*_IMPLEMENTATION.md
+*_COMPLETE.md
+*_STATUS.md
+*_SUMMARY.md
+*_READY.md
+ACCORDION_*.md
+CHATBOT_*.md
+CHAT_*.md
+COLLAPSIBLE_*.md
+CURATED_*.md
+DARK_*.md
+DEPLOYMENT_*.md
+DOCKER_*.md
+DURATION_*.md
+EMERGING_*.md
+ENHANCED_*.md
+FINAL_*.md
+GITHUB_*.md
+GLASSMORPHIC_*.md
+GOOGLE_*.md
+HYBRID_*.md
+IMPLEMENTATION_*.md
+INSTALL_*.md
+INTERACTIVE_*.md
+LANGSMITH_*.md
+LEARNING_*.md
+LIGHT_*.md
+LOCAL_*.md
+MILESTONE_*.md
+OBSERVABILITY_*.md
+PERFORMANCE_*.md
+PERPLEXITY_*.md
+PERSISTENT_*.md
+PHASE*.md
+PRE_*.md
+PROGRESS_*.md
+QUICK*.md
+RENDER_*.md
+RESOURCE_*.md
+RESULT_*.md
+SIMPLE_*.md
+SINGLE_*.md
+SKILLS_*.md
+TEMPLATE_*.md
+TEST_*.md
+TRANSFORMATION_*.md
+UNIFIED_*.md
+MISSING_*.md
+
+# Backup files
+*.backup
+*.bak
+
+# Old/unused directories
+ai learning path generator/
+frontend/

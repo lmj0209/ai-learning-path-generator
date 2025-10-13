@@ -8,11 +8,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/glassmorphic.css') }}">
 </head>
-<body class="bg-primary min-h-screen" data-is-authenticated="{{ 'true' if current_user.is_authenticated else 'false' }}">
+<body class="grid-background min-h-screen" data-is-authenticated="{{ 'true' if current_user.is_authenticated else 'false' }}">
     <nav class="glass-nav py-4 px-6">
         <div class="container mx-auto flex justify-between items-center">
-            <a href="/" class="text-2xl font-bold text-gray-900 dark:text-white">
-                Learning<span class="text-neon-cyan">Path</span>
+            <a href="/" class="text-2xl font-bold text-white">
+                Learning<span class="text-neon-pink">Path</span>
             </a>
             <div class="flex items-center gap-6">
                 {% if current_user.is_authenticated %}

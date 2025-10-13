@@ -3,11 +3,78 @@ API endpoints for chat and milestone tracking functionality.
 """
 from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
-from web_app.models import db, UserLearningPath, MilestoneProgress
+from web_app.models import db, UserLearningPath, MilestoneProgress, LearningProgress
 from src.data.document_store import DocumentStore
 from datetime import datetime
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
+
+@api_bp.route('/save-path', methods=['POST'])
+@login_required
+def save_path_json():
+    """
+    Save or update a learning path for the current user.
+    Expects JSON: { path: <LearningPath dict> }
+    Returns: { success, path_id }
+    """
+    try:
+        payload = request.get_json(silent=True) or {}
+        path_data = payload.get('path') or {}
+        if not path_data or not isinstance(path_data, dict):
+            return jsonify({'success': False, 'message': 'Invalid payload'}), 400
+
+        path_id = path_data.get('id')
+        if not path_id:
+            import uuid as _uuid
+            path_id = str(_uuid.uuid4())
+            path_data['id'] = path_id
+
+        # Upsert user path
+        user_path = UserLearningPath.query.filter_by(
+            id=path_id,
+            user_id=current_user.id
+        ).first()
+
+        if user_path:
+            user_path.path_data_json = path_data
+            user_path.title = path_data.get('title', 'Untitled Path')
+            user_path.topic = path_data.get('topic', 'General')
+        else:
+            user_path = UserLearningPath(
+                id=path_id,
+                user_id=current_user.id,
+                path_data_json=path_data,
+                title=path_data.get('title', 'Untitled Path'),
+                topic=path_data.get('topic', 'General')
+            )
+            db.session.add(user_path)
+
+        db.session.commit()
+
+        # Ensure progress rows exist
+        try:
+            milestones = path_data.get('milestones', [])
+            for i, _ in enumerate(milestones):
+                exists = LearningProgress.query.filter_by(
+                    user_learning_path_id=path_id,
+                    milestone_identifier=str(i)
+                ).first()
+                if not exists:
+                    db.session.add(LearningProgress(
+                        user_learning_path_id=path_id,
+                        milestone_identifier=str(i),
+                        status='not_started'
+                    ))
+            db.session.commit()
+        except Exception as _e:
+            current_app.logger.warning(f"Failed to seed LearningProgress rows: {_e}")
+            db.session.rollback()
+
+        return jsonify({'success': True, 'path_id': path_id}), 200
+    except Exception as e:
+        current_app.logger.error(f"Error saving path: {str(e)}")
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Failed to save path'}), 500
 
 @api_bp.route('/track-milestone', methods=['POST'])
 @login_required

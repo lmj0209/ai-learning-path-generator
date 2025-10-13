@@ -707,6 +707,223 @@ SKILLS_DATABASE = {
             }
         }
     },
+    
+    # ===== EMERGING AI ROLES 2025 =====
+    "Prompt Engineering": {
+        "category": "Emerging AI Roles",
+        "salary_range": "$140,000 - $220,000",
+        "salary_min": 140000,
+        "salary_max": 220000,
+        "market_info": {
+            "demand": "Very High",
+            "growth_rate": "+60%",
+            "open_positions": "12,000+",
+            "top_employers": ["OpenAI", "Anthropic", "Google", "Microsoft", "Meta", "Startups"],
+            "related_roles": ["Prompt Engineer", "AI Product Manager", "LLM Specialist", "Conversational AI Designer"]
+        },
+        "description": "A specialist who crafts precise inputs (prompts) for generative AI models to optimize outputs, bridging human intent and AI capabilities.",
+        "key_responsibilities": [
+            "Designing and testing prompts for optimal AI outputs",
+            "Iterating on AI responses for accuracy and relevance",
+            "Collaborating with developers to refine models",
+            "Training teams on effective prompting techniques",
+            "A/B testing different prompt strategies"
+        ],
+        "resources": {
+            "beginner": {
+                "youtube": ["OpenAI", "AI Explained", "Matt Wolfe"],
+                "websites": ["Learn Prompting", "PromptingGuide.ai", "OpenAI Cookbook"]
+            },
+            "intermediate": {
+                "youtube": ["DeepLearningAI", "Prompt Engineering Guide", "AI Jason"],
+                "websites": ["Anthropic Docs", "LangChain Docs", "PromptBase"]
+            },
+            "advanced": {
+                "youtube": ["Andrej Karpathy", "Yannic Kilcher", "AI Coffee Break"],
+                "websites": ["ArXiv.org", "Papers with Code", "HuggingFace Research"]
+            }
+        }
+    },
+    
+    "AI Ethics & Governance": {
+        "category": "Emerging AI Roles",
+        "salary_range": "$150,000 - $230,000",
+        "salary_min": 150000,
+        "salary_max": 230000,
+        "market_info": {
+            "demand": "Very High",
+            "growth_rate": "+55%",
+            "open_positions": "8,000+",
+            "top_employers": ["OpenAI", "Google", "Meta", "Microsoft", "Anthropic", "Partnership on AI"],
+            "related_roles": ["AI Ethics Officer", "Responsible AI Lead", "AI Policy Analyst", "AI Governance Specialist"]
+        },
+        "description": "An expert focused on ensuring AI systems are fair, transparent, and unbiased, addressing regulatory and societal concerns in AI deployment.",
+        "key_responsibilities": [
+            "Auditing AI systems for bias and fairness",
+            "Developing ethical guidelines and frameworks",
+            "Conducting AI impact assessments",
+            "Advising on compliance with AI regulations (EU AI Act, etc.)",
+            "Stakeholder communication on AI ethics"
+        ],
+        "resources": {
+            "beginner": {
+                "youtube": ["TED-Ed", "Computerphile", "CrashCourse AI Ethics"],
+                "websites": ["AI Ethics Guidelines", "Ethics.ai", "Partnership on AI"]
+            },
+            "intermediate": {
+                "youtube": ["Stanford HAI", "Montreal AI Ethics Institute", "DeepLearningAI"],
+                "websites": ["Futureoflife.org", "AI Index Stanford", "FAccT Conference"]
+            },
+            "advanced": {
+                "youtube": ["Timnit Gebru", "Kate Crawford", "Joy Buolamwini"],
+                "websites": ["FAccT Conference", "AIES Conference", "ArXiv AI Ethics"]
+            }
+        }
+    },
+    
+    "AI Auditing": {
+        "category": "Emerging AI Roles",
+        "salary_range": "$130,000 - $200,000",
+        "salary_min": 130000,
+        "salary_max": 200000,
+        "market_info": {
+            "demand": "High",
+            "growth_rate": "+50%",
+            "open_positions": "6,000+",
+            "top_employers": ["Deloitte", "PwC", "KPMG", "EY", "Tech Companies", "Financial Institutions"],
+            "related_roles": ["AI Auditor", "ML Compliance Specialist", "AI Risk Analyst", "Algorithm Auditor"]
+        },
+        "description": "A role involving the inspection of AI systems for accuracy, security, and explainability, similar to financial auditing but for algorithms.",
+        "key_responsibilities": [
+            "Performing AI risk assessments",
+            "Documenting AI decision processes",
+            "Verifying model performance and accuracy",
+            "Reporting on vulnerabilities or errors",
+            "Ensuring regulatory compliance"
+        ],
+        "resources": {
+            "beginner": {
+                "youtube": ["AI Auditing Basics", "Computerphile", "freeCodeCamp.org"],
+                "websites": ["ISO AI Standards", "NIST AI Framework", "Coursera"]
+            },
+            "intermediate": {
+                "youtube": ["DeepLearningAI", "Stanford AI Audit", "AI Explained"],
+                "websites": ["SHAP Documentation", "LIME Tutorials", "TowardsDataScience"]
+            },
+            "advanced": {
+                "youtube": ["NeurIPS Talks", "ICML Tutorials", "AI Audit Research"],
+                "websites": ["ArXiv.org", "AI Audit Tools", "Explainable AI Research"]
+            }
+        }
+    },
+    
+    "Generative AI Engineering": {
+        "category": "Emerging AI Roles",
+        "salary_range": "$160,000 - $250,000",
+        "salary_min": 160000,
+        "salary_max": 250000,
+        "market_info": {
+            "demand": "Very High",
+            "growth_rate": "+70%",
+            "open_positions": "15,000+",
+            "top_employers": ["OpenAI", "Stability AI", "Midjourney", "Google", "Meta", "Adobe"],
+            "related_roles": ["Generative AI Engineer", "GenAI Developer", "Diffusion Model Specialist", "Creative AI Engineer"]
+        },
+        "description": "A developer specializing in building and deploying generative models for content creation (text, images, video), fueled by tools like DALL-E and Stable Diffusion.",
+        "key_responsibilities": [
+            "Integrating generative AI into applications",
+            "Fine-tuning models for specific use cases",
+            "Optimizing for scalability and performance",
+            "Ensuring output quality and safety",
+            "Building APIs for generative models"
+        ],
+        "resources": {
+            "beginner": {
+                "youtube": ["Sentdex", "freeCodeCamp.org", "AI Explained"],
+                "websites": ["HuggingFace.co", "Stability AI Docs", "OpenAI Platform"]
+            },
+            "intermediate": {
+                "youtube": ["DeepLearningAI", "Andrej Karpathy", "Two Minute Papers"],
+                "websites": ["PyTorch.org", "TensorFlow.org", "Papers with Code"]
+            },
+            "advanced": {
+                "youtube": ["Yannic Kilcher", "AI Coffee Break", "CVPR Talks"],
+                "websites": ["ArXiv.org", "Distill.pub", "NeurIPS Papers"]
+            }
+        }
+    },
+    
+    "Human-AI Collaboration": {
+        "category": "Emerging AI Roles",
+        "salary_range": "$120,000 - $190,000",
+        "salary_min": 120000,
+        "salary_max": 190000,
+        "market_info": {
+            "demand": "High",
+            "growth_rate": "+45%",
+            "open_positions": "7,000+",
+            "top_employers": ["Microsoft", "Google", "Salesforce", "Adobe", "Notion", "Figma"],
+            "related_roles": ["Human-AI Collaboration Specialist", "AI UX Designer", "Augmented Intelligence Designer", "AI Product Designer"]
+        },
+        "description": "A professional designing workflows where humans and AI augment each other, focusing on productivity tools and interface optimization.",
+        "key_responsibilities": [
+            "Creating collaborative AI interfaces",
+            "Training users on AI tools",
+            "Measuring human-AI performance metrics",
+            "Iterating on feedback loops",
+            "Designing AI-augmented workflows"
+        ],
+        "resources": {
+            "beginner": {
+                "youtube": ["DesignCourse", "Flux Academy", "Google Design"],
+                "websites": ["Interaction-design.org", "Nielsen Norman Group", "UX Collective"]
+            },
+            "intermediate": {
+                "youtube": ["Adobe MAX", "Figma Config", "Microsoft Design"],
+                "websites": ["Human-AI Interaction", "ACM CHI", "UX Research Methods"]
+            },
+            "advanced": {
+                "youtube": ["CHI Conference", "CSCW Talks", "HCI Research"],
+                "websites": ["ArXiv HCI", "ACM Digital Library", "Human-AI Research"]
+            }
+        }
+    },
+    
+    "AI Agent Architecture": {
+        "category": "Emerging AI Roles",
+        "salary_range": "$170,000 - $260,000",
+        "salary_min": 170000,
+        "salary_max": 260000,
+        "market_info": {
+            "demand": "Very High",
+            "growth_rate": "+65%",
+            "open_positions": "10,000+",
+            "top_employers": ["OpenAI", "Anthropic", "Google DeepMind", "Salesforce", "Microsoft", "Startups"],
+            "related_roles": ["AI Agent Architect", "Agentic AI Engineer", "Multi-Agent Systems Developer", "Autonomous AI Engineer"]
+        },
+        "description": "An engineer who designs autonomous AI agents capable of multi-step tasks (planning, decision-making), rising with agentic AI advancements like Salesforce's Agentforce.",
+        "key_responsibilities": [
+            "Architecting agent frameworks and systems",
+            "Handling multi-agent coordination",
+            "Ensuring reliability and error-handling",
+            "Scaling for enterprise use",
+            "Implementing ethical AI safeguards"
+        ],
+        "resources": {
+            "beginner": {
+                "youtube": ["DeepLearningAI", "Sentdex", "AI Explained"],
+                "websites": ["LangChain Docs", "AutoGPT", "AgentGPT"]
+            },
+            "intermediate": {
+                "youtube": ["Andrej Karpathy", "Two Minute Papers", "AI Agent Tutorials"],
+                "websites": ["LangGraph", "CrewAI", "Multi-Agent Systems"]
+            },
+            "advanced": {
+                "youtube": ["Yannic Kilcher", "AI Coffee Break", "NeurIPS Talks"],
+                "websites": ["ArXiv.org", "Reinforcement Learning", "Agent Research Papers"]
+            }
+        }
+    },
 }
 
 

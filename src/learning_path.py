@@ -768,6 +768,48 @@ Return ONLY the JSON object, no markdown formatting or explanation.
             import traceback
             traceback.print_exc()
 
+        # Ensure each milestone has resources after validation; perform general search fallback if needed
+        for milestone in learning_path.milestones:
+            try:
+                if not milestone.resources or len(milestone.resources) == 0:
+                    print(f"  ⚠️  No valid resources after validation for: {milestone.title}. Running general search fallback...")
+                    contextualized_query = f"{topic}: {milestone.title}"
+                    general_results = search_resources(contextualized_query, k=5, trusted_sources=None)
+                    if general_results:
+                        milestone.resources = [ResourceItem(**r) for r in general_results[:3]]
+                
+                if not milestone.resources or len(milestone.resources) == 0:
+                    print(f"  ⚠️  General search returned no results. Adding search links for: {milestone.title}")
+                    yt_q = milestone.title.replace(' ', '+')
+                    g_q = milestone.title.replace(' ', '+')
+                    milestone.resources = [
+                        ResourceItem(
+                            type="Video",
+                            url=f"https://www.youtube.com/results?search_query={yt_q}",
+                            description=f"YouTube: {milestone.title}"
+                        ),
+                        ResourceItem(
+                            type="Web Search",
+                            url=f"https://www.google.com/search?q={g_q}",
+                            description=f"Google: {milestone.title}"
+                        ),
+                    ]
+                
+                if len(milestone.resources) < 2:
+                    print(f"  ℹ️  Topping up resources for: {milestone.title}")
+                    contextualized_query = f"{topic}: {milestone.title}"
+                    more_results = search_resources(contextualized_query, k=5, trusted_sources=None)
+                    if more_results:
+                        for r in more_results:
+                            if len(milestone.resources) >= 3:
+                                break
+                            try:
+                                milestone.resources.append(ResourceItem(**r))
+                            except Exception:
+                                continue
+            except Exception as _e:
+                print(f"  ⚠️  Post-validation fallback failed for {milestone.title}: {_e}")
+
         topic_weights = {
             milestone.title: milestone.estimated_hours
             for milestone in learning_path.milestones

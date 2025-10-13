@@ -15,6 +15,7 @@ from src.learning_path import LearningPath, LearningPathGenerator
 from src.data.resources import ResourceManager # Assuming this is the correct path
 from src.utils.config import LEARNING_STYLES, EXPERTISE_LEVELS, TIME_COMMITMENTS
 from src.ml.job_market import get_job_market_stats
+from src.data.skills_database import SKILLS_DATABASE, get_all_categories, get_skills_by_category
 
 # Define the blueprint
 bp = Blueprint('main', __name__, template_folder='../templates') # Adjusted template_folder path
@@ -48,10 +49,22 @@ def inject_current_year():
 
 @bp.route('/')
 def index():
+    # Get all categories and organize skills by category
+    categories = get_all_categories()
+    skills_by_category = {}
+    for category in categories:
+        skills_by_category[category] = get_skills_by_category(category)
+    
+    # Get all skills for the popular topics section
+    all_skills = list(SKILLS_DATABASE.keys())
+    
     return render_template(
         'index.html',
         expertise_levels=EXPERTISE_LEVELS,
-        time_commitments=TIME_COMMITMENTS
+        time_commitments=TIME_COMMITMENTS,
+        categories=categories,
+        skills_by_category=skills_by_category,
+        all_skills=all_skills
     )
 
 @bp.route('/generate', methods=['POST'])
@@ -452,7 +465,7 @@ def save_learning_path():
     path_data = session.get('current_path')
     if not path_data:
         flash('No learning path to save.', 'error')
-        return redirect(url_for('main.index'))
+        return redirect('/')
     
     path_id = path_data.get('id', str(uuid.uuid4()))
     path_data['id'] = path_id  # Ensure path has an ID
@@ -722,7 +735,7 @@ def result():
     # If still not found, return to homepage
     if not path_data:
         flash('Learning path not found. Please generate a new one.', 'warning')
-        return redirect(url_for('main.index'))
+        return redirect('/')
 
     path_id = requested_id or path_data.get('id')
     if not path_id:
@@ -2013,7 +2026,7 @@ def download_path(path_id):
             path_data = session.get('current_path')
             if not path_data:
                 flash('Learning path not found', 'error')
-                return redirect(url_for('main.index'))
+                return redirect('/')
         else:
             path_data = user_path.path_data_json
 
