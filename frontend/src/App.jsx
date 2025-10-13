@@ -124,7 +124,7 @@ function App() {
         {/* Footer */}
         <footer className="text-center mt-16 text-white/60">
           <p className="text-sm">
-            Powered by AI • Built with React + Vite
+            Powered by AI • Built with React + Vite + Vercel
           </p>
         </footer>
       </div>
