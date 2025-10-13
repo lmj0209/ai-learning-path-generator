@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import LegacyExperience from './LegacyExperience.jsx'
+import App from './App.jsx'
 import './index.css'
 
 // Error boundary to catch rendering errors
@@ -39,7 +39,7 @@ class ErrorBoundary extends React.Component {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <LegacyExperience />
+      <App />
     </ErrorBoundary>
   </React.StrictMode>,
 )
