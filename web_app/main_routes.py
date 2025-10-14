@@ -569,8 +569,8 @@ def load_paths():
             paths = [path.to_dict() for path in user_paths]
             return jsonify({'success': True, 'paths': paths})
         else:
-            paths = _load_all_anonymous_paths()
-            return jsonify({'success': True, 'paths': paths})
+            # Anonymous users have no saved paths
+            return jsonify({'success': True, 'paths': []})
 
 @bp.route('/my-paths')
 def my_paths():
@@ -578,12 +578,8 @@ def my_paths():
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
     else:
-        paths = _load_all_anonymous_paths()
-                        data = json.load(f)
-                        data['path_data']['id'] = path_id
-                        paths.append(data['path_data'])
-                    except Exception:
-                        current_app.logger.warning(f"Failed to load saved path file: {file_path}")
+        # For anonymous users, return empty list (no saved paths)
+        paths = []
         return render_template('login.html', paths=paths)
 
 @bp.route('/dashboard')
