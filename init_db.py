@@ -8,5 +8,14 @@ app = create_app()
 
 with app.app_context():
     print("Creating database tables...")
-    db.create_all()
-    print("✅ Database tables created successfully!")
+    try:
+        db.create_all()
+        print("✅ Database tables created successfully!")
+    except Exception as e:
+        # If tables/constraints already exist, that's OK
+        if "already exists" in str(e).lower():
+            print("⚠️  Some tables/constraints already exist - continuing...")
+            print("✅ Database is ready!")
+        else:
+            print(f"❌ Error creating tables: {e}")
+            raise
