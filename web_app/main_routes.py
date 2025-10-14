@@ -6,6 +6,10 @@ from pathlib import Path
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for, flash, current_app, send_from_directory, abort, Response, stream_with_context, make_response
 from flask_login import current_user, login_required
 from web_app.models import db, UserLearningPath, LearningProgress, ChatMessage, ResourceProgress
+from src.data.skills_database import SKILLS_DATABASE, get_all_categories, get_skills_by_category
+from src.utils.config import EXPERTISE_LEVELS, TIME_COMMITMENTS
+from src.learning_path import LearningPathGenerator
+from src.data.resources import ResourceManager
 import uuid
 import time
 
