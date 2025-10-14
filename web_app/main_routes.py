@@ -2,20 +2,12 @@ from datetime import datetime
 import os
 import json
 from pathlib import Path
+
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for, flash, current_app, send_from_directory, abort, Response, stream_with_context, make_response
 from flask_login import current_user, login_required
 from web_app.models import db, UserLearningPath, LearningProgress, ChatMessage, ResourceProgress
 import uuid
 import time
-from rq import Queue
-from werkzeug.utils import secure_filename
-from pydantic import ValidationError as PydanticValidationError
-
-from src.learning_path import LearningPath, LearningPathGenerator
-from src.data.resources import ResourceManager # Assuming this is the correct path
-from src.utils.config import LEARNING_STYLES, EXPERTISE_LEVELS, TIME_COMMITMENTS
-from src.ml.job_market import get_job_market_stats
-from src.data.skills_database import SKILLS_DATABASE, get_all_categories, get_skills_by_category
 
 # Define the blueprint
 bp = Blueprint('main', __name__, template_folder='../templates') # Adjusted template_folder path
@@ -159,9 +151,14 @@ def generate_path():
         
         # Store only the path_id in session (not the entire path_data to avoid cookie size issues)
         session['current_path_id'] = path_id
+        session.pop('current_path', None)
         session.modified = True
         current_app.logger.info(f'Stored path ID in session: {path_id}')
-        
+
+        # Persist anonymous paths to filesystem to avoid large cookies
+        if not current_user.is_authenticated:
+            _store_anonymous_path(path_id, path_data)
+
         # For logged-in users, automatically save to database
         if current_user.is_authenticated:
             # Check if this path already exists for this user
@@ -380,8 +377,12 @@ def generate_stream():
             
             # Store only path_id in session (not entire path_data to avoid cookie size issues)
             session['current_path_id'] = path_id
+            session.pop('current_path', None)
             session.modified = True
             current_app.logger.info(f'SSE: Stored path ID in session: {path_id}')
+
+            if not is_authenticated:
+                _store_anonymous_path(path_id, path_data)
             
             # For logged-in users, save to database
             if is_authenticated and user_id:
@@ -462,12 +463,26 @@ def generate_stream():
 
 def save_learning_path():
     """Save the current learning path to the database for logged-in users or to session for anonymous users"""
-    path_data = session.get('current_path')
+    path_id = session.get('current_path_id')
+    path_data = None
+
+    if current_user.is_authenticated and path_id:
+        user_path = UserLearningPath.query.filter_by(
+            user_id=current_user.id,
+            id=path_id
+        ).first()
+        
+        if user_path:
+            path_data = user_path.path_data_json
+
+    if not path_data and path_id:
+        path_data = _load_anonymous_path(path_id)
+
     if not path_data:
         flash('No learning path to save.', 'error')
         return redirect('/')
-    
-    path_id = path_data.get('id', str(uuid.uuid4()))
+
+    path_id = path_data.get('id', path_id or str(uuid.uuid4()))
     path_data['id'] = path_id  # Ensure path has an ID
     
     # For logged-in users, save to database
@@ -494,18 +509,16 @@ def save_learning_path():
                 path_data_json=path_data,  # Use path_data_json field name from the model
                 title=path_data.get('title', 'Untitled Path'),
                 topic=path_data.get('topic', 'General')
-                # Note: expertise_level is not a column in the model
             )
             db.session.add(new_path)
             db.session.commit()
             
             # Create initial progress entries for each milestone
             milestones = path_data.get('milestones', [])
-            for i, milestone in enumerate(milestones):
-                milestone_id = str(i)  # Using index as milestone identifier
+            for i, _ in enumerate(milestones):
                 progress = LearningProgress(
                     user_learning_path_id=path_id,
-                    milestone_identifier=milestone_id,
+                    milestone_identifier=str(i),
                     status='not_started'
                 )
                 db.session.add(progress)
@@ -518,35 +531,7 @@ def save_learning_path():
     # For anonymous users, save to session
     else:
         # Store in session
-        if 'saved_paths' not in session:
-            session['saved_paths'] = {}
-        
-        session['saved_paths'][path_id] = {
-            'path_data': path_data,
-            'created_at': datetime.now().isoformat(),
-            'updated_at': datetime.now().isoformat()
-        }
-        
-        # Also save to file for persistence
-        save_dir = Path(current_app.root_path) / 'anonymous_saved_paths'
-        save_dir.mkdir(exist_ok=True)
-        
-        # Use session ID or a cookie to identify anonymous users
-        session_id = session.get('anonymous_id')
-        if not session_id:
-            session_id = str(uuid.uuid4())
-            session['anonymous_id'] = session_id
-        
-        file_name = f"{session_id}_{path_id}.json"
-        file_path = save_dir / file_name
-        
-        with open(file_path, 'w') as f:
-            json.dump({
-                'path_data': path_data,
-                'created_at': datetime.now().isoformat(),
-                'updated_at': datetime.now().isoformat()
-            }, f, indent=4)
-        
+        _store_anonymous_path(path_id, path_data)
         flash('Learning path saved. Create an account to track your progress!', 'info')
         return redirect(url_for('main.result', id=path_id))
 
@@ -578,22 +563,14 @@ def load_learning_path(path_id):
 
 @bp.route('/load_paths', methods=['GET'])
 def load_paths():
-    # This is a placeholder. Actual loading will involve database query.
-    if current_user.is_authenticated:
-        user_paths = UserLearningPath.query.filter_by(user_id=current_user.id).all()
-        paths = []
-        for path in user_paths:
-            paths.append({
-                'id': path.id,
-                'title': path.title,
-                'topic': path.topic,
-                'expertise_level': path.expertise_level,
-                'created_at': path.created_at.strftime('%Y-%m-%d')
-            })
-        return jsonify({'success': True, 'paths': paths})
-    else:
-        paths = session.get('saved_paths', [])
-        return jsonify({'success': True, 'paths': paths})
+    if request.method == 'GET':
+        if current_user.is_authenticated:
+            user_paths = UserLearningPath.query.filter_by(user_id=current_user.id).all()
+            paths = [path.to_dict() for path in user_paths]
+            return jsonify({'success': True, 'paths': paths})
+        else:
+            paths = _load_all_anonymous_paths()
+            return jsonify({'success': True, 'paths': paths})
 
 @bp.route('/my-paths')
 def my_paths():
@@ -601,7 +578,12 @@ def my_paths():
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
     else:
-        paths = session.get('saved_paths', [])
+        paths = _load_all_anonymous_paths()
+                        data = json.load(f)
+                        data['path_data']['id'] = path_id
+                        paths.append(data['path_data'])
+                    except Exception:
+                        current_app.logger.warning(f"Failed to load saved path file: {file_path}")
         return render_template('login.html', paths=paths)
 
 @bp.route('/dashboard')
@@ -775,20 +757,24 @@ def result():
             if status == 'completed':
                 completed_count += 1
         
-        # Also check MilestoneProgress for newer tracking
-        from web_app.models import MilestoneProgress
-        milestone_progress_entries = MilestoneProgress.query.filter_by(
-            user_id=current_user.id,
-            learning_path_id=path_id
-        ).all()
-        
-        for entry in milestone_progress_entries:
-            milestone_key = str(entry.milestone_index)
-            if entry.completed:
-                # Override with completed status from MilestoneProgress
-                if milestone_key not in progress_map or progress_map[milestone_key] != 'completed':
-                    progress_map[milestone_key] = 'completed'
-                    completed_count += 1
+        # Also check MilestoneProgress for newer tracking (with error handling for missing table)
+        try:
+            from web_app.models import MilestoneProgress
+            milestone_progress_entries = MilestoneProgress.query.filter_by(
+                user_id=current_user.id,
+                learning_path_id=path_id
+            ).all()
+            
+            for entry in milestone_progress_entries:
+                milestone_key = str(entry.milestone_index)
+                if entry.completed:
+                    # Override with completed status from MilestoneProgress
+                    if milestone_key not in progress_map or progress_map[milestone_key] != 'completed':
+                        progress_map[milestone_key] = 'completed'
+                        completed_count += 1
+        except Exception as e:
+            # Table doesn't exist yet or other DB error - skip milestone progress check
+            current_app.logger.warning(f"Could not fetch MilestoneProgress (table may not exist): {e}")
 
     progress_percentage = int((completed_count / total_milestones) * 100) if total_milestones else 0
 
