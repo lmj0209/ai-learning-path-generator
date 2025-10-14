@@ -1607,7 +1607,8 @@ Be warm, supportive, and concise."""
                     user_facing_response = response.split("GENERATE_PATH:")[0].strip()
                     
                     return jsonify({
-                        'reply': user_facing_response,
+                        'success': True,
+                        'response': user_facing_response,
                         'action': 'generate_path',
                         'parameters': {
                             'topic': topic,
@@ -1617,14 +1618,15 @@ Be warm, supportive, and concise."""
                         }
                     })
         
-        return jsonify({'reply': response})
+        return jsonify({'success': True, 'response': response})
     
     except Exception as e:
         current_app.logger.error(f"Error in /direct_chat: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({
-            'reply': "I apologize, but I encountered an error. Please try again or use the form above to generate your learning path."
+            'success': False,
+            'response': "I apologize, but I encountered an error. Please try again or use the form above to generate your learning path."
         }), 500
 
 
