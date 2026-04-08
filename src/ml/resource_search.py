@@ -302,16 +302,24 @@ def search_resources(query: str, k: int = 3, timeout: int = 45, trusted_sources:
         except Exception as exc:
             logging.warning(f"Perplexity resource search failed: {exc}. Falling back to OpenAI...")
 
-    # Fallback to OpenAI
-    api_key = os.getenv("OPENAI_API_KEY")
+    # Fallback to OpenAI or DeepSeek
+    deepseek_key = os.getenv("DEEPSEEK_API_KEY")
+    openai_key = os.getenv("OPENAI_API_KEY")
+    api_key = deepseek_key or openai_key
     if not api_key:
-        logging.info("OPENAI_API_KEY not set; returning stub resources")
+        logging.info("No API key set (DEEPSEEK_API_KEY or OPENAI_API_KEY); returning stub resources")
         return _stub_resources()
 
-    model = os.getenv("DEFAULT_MODEL", "gpt-4o-mini")
+    model = os.getenv("DEFAULT_MODEL", "deepseek-chat" if deepseek_key else "gpt-4o-mini")
 
     try:
-        client = OpenAI(api_key=api_key)
+        if deepseek_key:
+            client = OpenAI(
+                api_key=deepseek_key,
+                base_url="https://api.deepseek.com"
+            )
+        else:
+            client = OpenAI(api_key=api_key)
 
         completion = client.chat.completions.create(
             model=model,
@@ -343,5 +351,5 @@ def search_resources(query: str, k: int = 3, timeout: int = 45, trusted_sources:
         cleaned = _filter_by_keywords(cleaned, query)
         return cleaned or _stub_resources()
     except Exception as exc:
-        logging.warning("OpenAI resource search failed: %s", exc)
+        logging.warning("Resource search failed: %s", exc)
         return _stub_resources()

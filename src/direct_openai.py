@@ -17,39 +17,57 @@ def generate_completion(
     timeout: int = 120
 ) -> str:
     """
-    Generate a completion using direct HTTP requests to OpenAI API.
-    
+    Generate a completion using direct HTTP requests to OpenAI-compatible API.
+    Supports both OpenAI and DeepSeek endpoints.
+
     Args:
         prompt: The user prompt
         system_message: Optional system message
-        model: The OpenAI model to use
+        model: The model to use (e.g. gpt-4o-mini, deepseek-chat)
         temperature: Sampling temperature
         max_tokens: Maximum tokens to generate
-        
+
     Returns:
         The generated text
     """
-    # Get API key from environment or directly from file if needed
-    api_key = os.environ.get("OPENAI_API_KEY")
-    
-    # Fallback to direct read if environment variable isn't working
+    # Determine provider based on available API keys
+    deepseek_key = os.environ.get("DEEPSEEK_API_KEY")
+    openai_key = os.environ.get("OPENAI_API_KEY")
+
+    if deepseek_key:
+        api_key = deepseek_key
+        url = "https://api.deepseek.com/v1/chat/completions"
+        provider_name = "DeepSeek"
+        # Override model to deepseek-chat if caller passed an OpenAI model name
+        if "gpt" in model.lower():
+            model = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+    else:
+        api_key = openai_key
+        url = "https://api.openai.com/v1/chat/completions"
+        provider_name = "OpenAI"
+
+    # Fallback to direct read from .env file if needed
     if not api_key or len(api_key) < 20:
         try:
             with open('.env', 'r') as f:
                 for line in f:
-                    if line.startswith('OPENAI_API_KEY='):
+                    if line.startswith('DEEPSEEK_API_KEY='):
                         api_key = line.strip().split('=', 1)[1]
+                        url = "https://api.deepseek.com/v1/chat/completions"
+                        provider_name = "DeepSeek"
+                        break
+                    elif line.startswith('OPENAI_API_KEY='):
+                        api_key = line.strip().split('=', 1)[1]
+                        url = "https://api.openai.com/v1/chat/completions"
+                        provider_name = "OpenAI"
                         break
         except Exception as e:
             print(f"Error reading API key from file: {e}")
-    
+
     if not api_key:
-        raise ValueError("OpenAI API key not found in environment variables or .env file")
-        
-    print(f"Using API key starting with: {api_key[:10]}...")
-    
-    # API endpoint
-    url = "https://api.openai.com/v1/chat/completions"
+        raise ValueError("No API key found. Set DEEPSEEK_API_KEY or OPENAI_API_KEY in environment variables or .env file")
+
+    print(f"Using {provider_name} API with key starting with: {api_key[:10]}..., model: {model}")
     
     # Request headers
     headers = {
@@ -68,7 +86,7 @@ def generate_completion(
         "max_tokens": max_tokens
     }
     
-    print("Making direct API request to OpenAI...")
+    print(f"Making direct API request to {provider_name}...")
     
     # Make the request
     try:
@@ -84,7 +102,7 @@ def generate_completion(
         
         # Parse response
         result = response.json()
-        print("Received response from OpenAI API")
+        print(f"Received response from {provider_name} API")
         
         # Extract and return the generated text
         if "choices" in result and len(result["choices"]) > 0:
@@ -104,4 +122,4 @@ def generate_completion(
         else:
             error_message = str(e)
             
-        raise ValueError(f"OpenAI API request failed: {error_message}")
+        raise ValueError(f"{provider_name} API request failed: {error_message}")

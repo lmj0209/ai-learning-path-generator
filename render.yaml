@@ -34,6 +34,15 @@ services:
       
       - key: OPENAI_API_KEY
         sync: false
+
+      - key: DEEPSEEK_API_KEY
+        sync: false
+
+      - key: DEFAULT_PROVIDER
+        value: deepseek
+
+      - key: DEFAULT_MODEL
+        value: deepseek-chat
       
       - key: GOOGLE_OAUTH_CLIENT_ID
         sync: false

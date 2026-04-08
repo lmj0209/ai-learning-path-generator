@@ -252,25 +252,33 @@ class ModelOrchestrator:
             # Set up the temperature
             temp = temperature if temperature is not None else TEMPERATURE
             
-            print("DEBUG: About to make OpenAI API call using direct implementation...")
-            
+            print("DEBUG: About to make API call using direct implementation...")
+
             import time
             from src.direct_openai import generate_completion
-            
+
             try:
                 start_time = time.time()
-                print(f"DEBUG: Using model: {self.model_name}")
+                print(f"DEBUG: Using provider: {self.provider}, model: {self.model_name}")
                 print(f"DEBUG: Prompt length: {len(full_prompt)} chars")
-                
-                # Use our direct implementation that bypasses the client library
-                response_text = generate_completion(
-                    prompt=full_prompt,
-                    system_message="You are an expert educational AI assistant that specializes in creating personalized learning paths.",
-                    model=self.model_name,
-                    temperature=temp,
-                    max_tokens=MAX_TOKENS,
-                    timeout=120
-                )
+
+                if self.provider == 'deepseek':
+                    # Use DeepSeek-specific completion
+                    response_text = self._deepseek_completion(
+                        full_prompt,
+                        temp,
+                        system_message="You are an expert educational AI assistant that specializes in creating personalized learning paths."
+                    )
+                else:
+                    # Use direct OpenAI-compatible completion
+                    response_text = generate_completion(
+                        prompt=full_prompt,
+                        system_message="You are an expert educational AI assistant that specializes in creating personalized learning paths.",
+                        model=self.model_name,
+                        temperature=temp,
+                        max_tokens=MAX_TOKENS,
+                        timeout=120
+                    )
                 
                 latency_ms = (time.time() - start_time) * 1000
                 print(f"DEBUG: API call completed in {latency_ms:.2f}ms")
@@ -360,7 +368,13 @@ class ModelOrchestrator:
         
         try:
             from openai import OpenAI
-            client = OpenAI(api_key=OPENAI_API_KEY)
+            if self.provider == 'deepseek':
+                client = OpenAI(
+                    api_key=DEEPSEEK_API_KEY,
+                    base_url="https://api.deepseek.com"
+                )
+            else:
+                client = OpenAI(api_key=OPENAI_API_KEY)
             
             stream = client.chat.completions.create(
                 model=self.model_name,

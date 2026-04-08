@@ -37,9 +37,9 @@ PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
 PERPLEXITY_PROMPT_COST_PER_1K = float(os.getenv("PERPLEXITY_PROMPT_COST_PER_1K", "0"))
 PERPLEXITY_COMPLETION_COST_PER_1K = float(os.getenv("PERPLEXITY_COMPLETION_COST_PER_1K", "0"))
 
-# Ensure OpenAI API key is available (unless in DEV_MODE)
-if not DEV_MODE and not OPENAI_API_KEY:
-    raise EnvironmentError("OPENAI_API_KEY environment variable is required (unless DEV_MODE=true).")
+# Ensure at least one API key is available (unless in DEV_MODE)
+if not DEV_MODE and not OPENAI_API_KEY and not DEEPSEEK_API_KEY:
+    raise EnvironmentError("OPENAI_API_KEY or DEEPSEEK_API_KEY environment variable is required (unless DEV_MODE=true).")
 
 # Default model provider (can be 'openai' or 'deepseek')
 DEFAULT_PROVIDER = os.getenv("DEFAULT_PROVIDER", "openai").lower()
