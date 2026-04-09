@@ -44,6 +44,9 @@ def init_database():
             print("✅ Database migrations completed successfully!")
         except Exception as e:
             print(f"⚠️  Migration warning: {e}")
+            # If migrations fail due to type inference, just create tables directly
+            if "unable to infer" in str(e).lower() or "score" in str(e).lower():
+                print("⚠️  Type inference error detected, falling back to db.create_all()...")
             print("\nAttempting to create missing tables...")
             try:
                 # Create tables if they don't exist (ignores existing ones)

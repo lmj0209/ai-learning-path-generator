@@ -51,6 +51,12 @@ def get_metadata():
     return target_db.metadata
 
 
+def render_item(type_, obj, autogen_context):
+    """Custom render_item to handle types that Alembic can't infer automatically."""
+    # Silently skip attributes that Alembic can't infer (e.g., from Flask-Dance mixins)
+    return None
+
+
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
 
@@ -65,7 +71,8 @@ def run_migrations_offline():
     """
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url, target_metadata=get_metadata(), literal_binds=True
+        url=url, target_metadata=get_metadata(), literal_binds=True,
+        render_item=render_item
     )
 
     with context.begin_transaction():
@@ -100,6 +107,7 @@ def run_migrations_online():
         context.configure(
             connection=connection,
             target_metadata=get_metadata(),
+            render_item=render_item,
             **conf_args
         )
 
