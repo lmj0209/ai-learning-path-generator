@@ -211,14 +211,16 @@ def generate_path():
         error_details = e.errors()
         # Simplified error message for now
         error_message = f"AI response validation failed: {error_details[0]['msg']} for field {error_details[0]['loc'][0] if error_details[0]['loc'] else 'unknown'}. Please try again or refine your topic."
-        if 'current_path' in session: del session['current_path'] 
-        return render_template('index.html', error=error_message, expertise_levels=EXPERTISE_LEVELS, time_commitments=TIME_COMMITMENTS)
+        if 'current_path' in session: del session['current_path']
+        all_skills = list(SKILLS_DATABASE.keys())
+        return render_template('index.html', error=error_message, expertise_levels=EXPERTISE_LEVELS, time_commitments=TIME_COMMITMENTS, all_skills=all_skills)
     except Exception as e:
         current_app.logger.error(f"Error in /generate: {str(e)}")
         # import traceback; traceback.print_exc() # For detailed server-side debugging
         error_message = f"An unexpected error occurred: {str(e)}. Please try again."
         if 'current_path' in session: del session['current_path']
-        return render_template('index.html', error=error_message, expertise_levels=EXPERTISE_LEVELS, time_commitments=TIME_COMMITMENTS)
+        all_skills = list(SKILLS_DATABASE.keys())
+        return render_template('index.html', error=error_message, expertise_levels=EXPERTISE_LEVELS, time_commitments=TIME_COMMITMENTS, all_skills=all_skills)
 
 
 # ============================================

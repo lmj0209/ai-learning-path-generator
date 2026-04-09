@@ -147,15 +147,18 @@ class ModelOrchestrator:
                 print(f"--- ModelOrchestrator.init_language_model: ChatOpenAI for {self.provider} initialized ---")
             elif self.provider == 'deepseek':
                 print(f"--- ModelOrchestrator.init_language_model: Initializing ChatOpenAI for {self.provider} ---")
-                # Fallback to OpenAI
-                print("Using OpenAI as fallback for DeepSeek")
                 from openai import OpenAI as OpenAIClient
-                client = OpenAIClient(api_key=OPENAI_API_KEY)
+                client = OpenAIClient(
+                    api_key=self.api_key,
+                    base_url="https://api.deepseek.com"
+                )
                 self.llm = ChatOpenAI(
                     client=client,
-                    model=DEFAULT_MODEL,
+                    model=self.model_name,
                     temperature=temp,
                     max_tokens=MAX_TOKENS,
+                    openai_api_key=self.api_key,
+                    openai_api_base="https://api.deepseek.com",
                 )
             # OpenAI is the primary provider now
         except Exception as e:
