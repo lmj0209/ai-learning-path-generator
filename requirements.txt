@@ -51,8 +51,10 @@ redis>=4.6.0,<5.0.0
 rq==1.16.1
 
 # Observability & Monitoring
-langsmith<0.1.0,>=0.0.21  # LLM tracing and debugging (compatible with langchain 0.0.267)
-wandb>=0.16.0  # Experiment tracking and metrics
+# Pin langsmith to 0.0.63 — last version compatible with pydantic v1 + langchain 0.0.267
+# Newer versions (0.1.0+) require pydantic v2 and break on the "score" field
+langsmith==0.0.63
+# wandb removed — heavy dep, not required for core functionality
 
 # Development
 pytest>=7.0.0

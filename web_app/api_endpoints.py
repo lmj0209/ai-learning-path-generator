@@ -9,6 +9,12 @@ from datetime import datetime
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
+
+@api_bp.route('/health', methods=['GET'])
+def health():
+    return jsonify({'status': 'ok'}), 200
+
+
 @api_bp.route('/save-path', methods=['POST'])
 @login_required
 def save_path_json():

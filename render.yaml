@@ -1,5 +1,13 @@
 services:
-  # Main Web Service
+  # PostgreSQL Database
+  - type: pserv
+    name: ai-learning-path-db
+    env: postgresql
+    region: oregon
+    plan: free
+    ipAllowList: []
+
+  # Main Web Service (Flask API)
   - type: web
     name: ai-learning-path-api
     env: python
@@ -8,27 +16,29 @@ services:
     branch: main
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn run:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
-    
+    healthCheckPath: /api/health
+
     envVars:
-      - key: PYTHON_VERSION
-        value: "3.11.9"
-      
       - key: FLASK_SECRET_KEY
         generateValue: true
-      
-      - key: OAUTHLIB_INSECURE_TRANSPORT
-        value: false
-      
-      - key: OAUTHLIB_RELAX_TOKEN_SCOPE
-        value: true
-      
+
       - key: RENDER
         value: true
-      
-      # These need to be set manually in Render dashboard
+
+      - key: OAUTHLIB_INSECURE_TRANSPORT
+        value: false
+
+      - key: OAUTHLIB_RELAX_TOKEN_SCOPE
+        value: true
+
       - key: DATABASE_URL
+        fromDatabase:
+          name: ai-learning-path-db
+          property: connectionString
+
+      - key: REDIS_URL
         sync: false
-      
+
       - key: OPENAI_API_KEY
         sync: false
 
@@ -40,15 +50,43 @@ services:
 
       - key: DEFAULT_MODEL
         value: deepseek-chat
-      
+
       - key: GOOGLE_OAUTH_CLIENT_ID
         sync: false
-      
+
       - key: GOOGLE_OAUTH_CLIENT_SECRET
         sync: false
-      
+
+  # Background Worker (RQ)
+  - type: worker
+    name: ai-learning-path-worker
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: python worker.py
+
+    envVars:
+      - key: RENDER
+        value: true
+
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ai-learning-path-db
+          property: connectionString
+
       - key: REDIS_URL
         sync: false
 
-# Note: PostgreSQL database should be created separately in Render dashboard
-# and linked via DATABASE_URL environment variable
+      - key: OPENAI_API_KEY
+        sync: false
+
+      - key: DEEPSEEK_API_KEY
+        sync: false
+
+      - key: DEFAULT_PROVIDER
+        value: deepseek
+
+      - key: DEFAULT_MODEL
+        value: deepseek-chat
