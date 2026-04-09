@@ -19,19 +19,16 @@ Flask-WTF==1.2.1
 Flask-Migrate==4.0.7
 
 # Document processing
-unstructured==0.10.30  # Using base package without all-docs to avoid complex deps
 pypandoc>=1.11
 python-magic>=0.4.27; sys_platform != 'win32'
-onnxruntime>=1.20.0  # Explicitly specify a compatible version
 
-# RAG and embeddings
+# RAG and embeddings (using OpenAI API, no local models needed)
 faiss-cpu>=1.7.4
 
 # Vector database
 chromadb==0.3.29  # Last version compatible with Pydantic v1
 
-# ML & NLP
-sentence-transformers>=2.2.2
+# Data processing (lightweight)
 scikit-learn>=1.2.2
 numpy>=1.24.0
 pandas>=2.0.0
@@ -51,18 +48,11 @@ redis>=4.6.0,<5.0.0
 rq==1.16.1
 
 # Observability & Monitoring
-# Pin langsmith to 0.0.63 — last version compatible with pydantic v1 + langchain 0.0.267
-# Newer versions (0.1.0+) require pydantic v2 and break on the "score" field
 langsmith==0.0.63
-# wandb removed — heavy dep, not required for core functionality
 
 # Development
 pytest>=7.0.0
-pytest-asyncio>=0.21.0  # For async test support
-
-# Platform-specific dependencies
---find-links https://download.pytorch.org/whl/torch_stable.html
-
+pytest-asyncio>=0.21.0
 
 google-auth>=2.0.0
 google-auth-httplib2>=0.2.0
