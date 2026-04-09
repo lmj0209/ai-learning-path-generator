@@ -3,8 +3,32 @@ This script handles the setup and execution of the web application.
 """
 print("--- run.py started ---")
 import os
+import sys
 from pathlib import Path
 import shutil
+
+# Fix: PEP 649 (Python 3.14+) stores annotations via __annotate_func__
+# instead of __annotations__. pydantic v1 reads namespace.get('__annotations__', {})
+# which is empty, causing all BaseModel fields to crash with "unable to infer type".
+# This patch must run BEFORE any pydantic/langchain/langsmith import.
+if sys.version_info >= (3, 14):
+    try:
+        from pydantic.main import ModelMetaclass as _MC
+
+        _orig_mc_new = _MC.__new__
+
+        def _patched_mc_new(mcs, name, bases, namespace, **kwargs):
+            if '__annotations__' not in namespace and '__annotate_func__' in namespace:
+                try:
+                    namespace['__annotations__'] = namespace['__annotate_func__'](1)
+                except Exception:
+                    pass
+            return _orig_mc_new(mcs, name, bases, namespace, **kwargs)
+
+        _MC.__new__ = staticmethod(_patched_mc_new)
+        print("[pydantic_fix] Patched pydantic v1 for Python 3.14+")
+    except Exception as _e:
+        print(f"[pydantic_fix] WARNING: Could not patch pydantic: {_e}")
 
 from dotenv import load_dotenv
 

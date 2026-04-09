@@ -1,4 +1,22 @@
 import os
+import sys
+
+# Fix pydantic v1 for Python 3.14+ (must be before any pydantic/langchain import)
+if sys.version_info >= (3, 14):
+    try:
+        from pydantic.main import ModelMetaclass as _MC
+        _orig_mc_new = _MC.__new__
+        def _patched_mc_new(mcs, name, bases, namespace, **kwargs):
+            if '__annotations__' not in namespace and '__annotate_func__' in namespace:
+                try:
+                    namespace['__annotations__'] = namespace['__annotate_func__'](1)
+                except Exception:
+                    pass
+            return _orig_mc_new(mcs, name, bases, namespace, **kwargs)
+        _MC.__new__ = staticmethod(_patched_mc_new)
+    except Exception:
+        pass
+
 import redis
 from rq import Worker, Queue, Connection
 from dotenv import load_dotenv

@@ -31,6 +31,12 @@ services:
       - key: OAUTHLIB_RELAX_TOKEN_SCOPE
         value: true
 
+      - key: LANGCHAIN_TRACING_V2
+        value: false
+
+      - key: LANGCHAIN_HANDLER
+        value: ""
+
       - key: DATABASE_URL
         fromDatabase:
           name: ai-learning-path-db
