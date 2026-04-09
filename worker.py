@@ -14,16 +14,23 @@ if sys.version_info >= (3, 14):
         def _patched_mc_new(mcs, name, bases, namespace, **kwargs):
             if '__annotations__' not in namespace and '__annotate_func__' in namespace:
                 try:
-                    ann = namespace['__annotate_func__'](1)
-                    for key, value in ann.items():
-                        if not isinstance(value, type) and callable(value) and hasattr(value, '__name__'):
-                            if value.__name__ in _builtin_types:
-                                ann[key] = _builtin_types[value.__name__]
-                    namespace['__annotations__'] = ann
+                    namespace['__annotations__'] = namespace['__annotate_func__'](1)
                 except Exception:
                     pass
             return _orig_mc_new(mcs, name, bases, namespace, **kwargs)
         _MC.__new__ = staticmethod(_patched_mc_new)
+        from pydantic import validators as _pv
+        from pydantic import fields as _pf
+        _orig_fv = _pv.find_validators
+        def _patched_fv(type_, model_config):
+            if not isinstance(type_, type) and callable(type_) and hasattr(type_, '__name__'):
+                bt = _builtin_types.get(type_.__name__)
+                if bt is not None:
+                    type_ = bt
+            return _orig_fv(type_, model_config)
+        _pv.find_validators = _patched_fv
+        if hasattr(_pf, 'find_validators'):
+            _pf.find_validators = _patched_fv
     except Exception:
         pass
 

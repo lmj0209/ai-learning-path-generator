@@ -7,43 +7,53 @@ import sys
 from pathlib import Path
 import shutil
 
-# Fix: PEP 649 (Python 3.14+) stores annotations via __annotate_func__
-# instead of __annotations__. This breaks pydantic v1 in TWO ways:
-# 1. __annotations__ is empty → fields get Undefined type
-# 2. Type names (e.g. 'dict') resolve to class methods instead of builtins
-#    e.g. BaseModel.dict method instead of builtins.dict type
+# Fix: PEP 649 (Python 3.14+) breaks pydantic v1 in multiple ways.
 # This patch must run BEFORE any pydantic/langchain/langsmith import.
 if sys.version_info >= (3, 14):
     try:
         from pydantic.main import ModelMetaclass as _MC
         import builtins as _builtins
 
-        # Pre-compute builtin type mapping for fixing annotation resolution
         _builtin_types = {
             name: obj for name, obj in vars(_builtins).items()
             if isinstance(obj, type)
         }
 
+        # Fix 1: Ensure __annotations__ is populated from __annotate_func__
         _orig_mc_new = _MC.__new__
 
         def _patched_mc_new(mcs, name, bases, namespace, **kwargs):
             if '__annotations__' not in namespace and '__annotate_func__' in namespace:
                 try:
-                    ann = namespace['__annotate_func__'](1)
-                    # Fix #2: PEP 649 evaluates annotations in the class namespace,
-                    # so 'dict' resolves to the .dict() method (pydantic BaseModel)
-                    # instead of the built-in dict type. Replace any annotation that
-                    # is a callable (not a type) whose name matches a builtin type.
-                    for key, value in ann.items():
-                        if not isinstance(value, type) and callable(value) and hasattr(value, '__name__'):
-                            if value.__name__ in _builtin_types:
-                                ann[key] = _builtin_types[value.__name__]
-                    namespace['__annotations__'] = ann
+                    namespace['__annotations__'] = namespace['__annotate_func__'](1)
                 except Exception:
                     pass
             return _orig_mc_new(mcs, name, bases, namespace, **kwargs)
 
         _MC.__new__ = staticmethod(_patched_mc_new)
+
+        # Fix 2: PEP 649 resolves builtin type names (dict, list, etc.) to
+        # class methods (e.g. BaseModel.dict) instead of the actual builtins.
+        # This happens inside generic aliases like Dict[str, dict] where dict
+        # is a sub-type. Patch find_validators to fix the type at use time.
+        from pydantic import validators as _pv
+        from pydantic import fields as _pf
+
+        _orig_fv = _pv.find_validators
+
+        def _patched_fv(type_, model_config):
+            # If type is a function/method (not a class) but named like a builtin,
+            # PEP 649 resolved it incorrectly. Use the actual builtin type instead.
+            if not isinstance(type_, type) and callable(type_) and hasattr(type_, '__name__'):
+                bt = _builtin_types.get(type_.__name__)
+                if bt is not None:
+                    type_ = bt
+            return _orig_fv(type_, model_config)
+
+        _pv.find_validators = _patched_fv
+        if hasattr(_pf, 'find_validators'):
+            _pf.find_validators = _patched_fv
+
         print("[pydantic_fix] Patched pydantic v1 for Python 3.14+")
     except Exception as _e:
         print(f"[pydantic_fix] WARNING: Could not patch pydantic: {_e}")
