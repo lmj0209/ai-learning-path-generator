@@ -43,10 +43,22 @@ os.makedirs("learning_paths", exist_ok=True)
 print("--- API key checked and dirs created ---")
 
 # Import and run Flask app
-from web_app import create_app
+import traceback
+try:
+    from web_app import create_app
+    print("--- create_app imported successfully ---")
+except Exception as e:
+    print(f"FATAL: Failed to import create_app: {e}")
+    traceback.print_exc()
+    raise
 
-app = create_app()
-print("--- Flask app created via factory ---")
+try:
+    app = create_app()
+    print("--- Flask app created via factory ---")
+except Exception as e:
+    print(f"FATAL: Failed to create app: {e}")
+    traceback.print_exc()
+    raise
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
