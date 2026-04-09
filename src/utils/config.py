@@ -48,7 +48,7 @@ DEFAULT_PROVIDER = os.getenv("DEFAULT_PROVIDER", "openai").lower()
 # Using GPT-4o-mini: 3x cheaper than GPT-3.5-turbo, better quality!
 # Cost: $0.15/1M input tokens vs $0.50 for GPT-3.5
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "gpt-4o-mini")
-MAX_TOKENS = int(os.getenv("MAX_TOKENS", "1000"))
+MAX_TOKENS = int(os.getenv("MAX_TOKENS", "4096"))
 TEMPERATURE = float(os.getenv("TEMPERATURE", "0.7"))
 
 # Embedding configuration - supports OpenAI-compatible APIs (Gitee AI, etc.)

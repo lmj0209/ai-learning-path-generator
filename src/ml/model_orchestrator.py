@@ -749,7 +749,7 @@ class ModelOrchestrator:
         payload_base = {
             "model": self.model_name if hasattr(self, "model_name") else "deepseek-chat",
             "temperature": temperature or 0.2,
-            "max_tokens": MAX_TOKENS,
+            "max_tokens": int(os.getenv("MAX_TOKENS", "4096")),
         }
         
         def _post(messages):
