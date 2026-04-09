@@ -135,8 +135,8 @@ class MilestoneProgress(db.Model):
 
     # Unique constraint: one entry per user, path, and milestone
     __table_args__ = (
-        db.UniqueConstraint('user_id', 'learning_path_id', 'milestone_index', 
-                          name='_user_path_milestone_uc'),
+        db.UniqueConstraint('user_id', 'learning_path_id', 'milestone_index',
+                          name='_milestone_progress_user_path_uc'),
     )
 
     def __repr__(self):
