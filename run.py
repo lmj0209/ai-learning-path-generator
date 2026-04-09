@@ -21,10 +21,10 @@ if not env_path.exists() and env_example_path.exists():
 load_dotenv()
 print("--- dotenv loaded ---")
 
-# Check if OpenAI API key is set
-if not os.getenv("OPENAI_API_KEY"):
-    print("WARNING: OPENAI_API_KEY not found in environment variables.")
-    print("Please set your API key in the .env file before running the application.")
+# Check if any API key is set
+if not os.getenv("OPENAI_API_KEY") and not os.getenv("DEEPSEEK_API_KEY"):
+    print("WARNING: Neither OPENAI_API_KEY nor DEEPSEEK_API_KEY found in environment variables.")
+    print("Please set at least one API key before running the application.")
     exit(1)
 
 # Create necessary directories
