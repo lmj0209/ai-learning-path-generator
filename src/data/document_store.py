@@ -137,7 +137,16 @@ class DocumentStore:
                     DocumentStore._shared_client = None
         
         self.client = DocumentStore._shared_client
-        
+
+        # If chromadb is not available, skip embedding and collection initialization
+        if self.client is None:
+            self.embedding_function = None
+            self.resources_collection = None
+            self.paths_collection = None
+            self._initialized = True
+            print("--- DocumentStore.__init__ finished (limited mode, no chromadb) ---")
+            return
+
         # Initialize shared embedding function (reuse across requests)
         if DocumentStore._shared_embedding_function is None:
             print(f"--- DocumentStore.__init__: Initializing custom embedding function ---")
@@ -152,18 +161,18 @@ class DocumentStore:
                             client_kwargs["base_url"] = base_url
                         self.client = OpenAI(**client_kwargs)
                         self.model_name = model_name
-                    
+
                     def __call__(self, texts):
                         """Generate embeddings for a list of texts."""
                         if isinstance(texts, str):
                             texts = [texts]
-                        
+
                         response = self.client.embeddings.create(
                             input=texts,
                             model=self.model_name
                         )
                         return [item.embedding for item in response.data]
-                
+
                 DocumentStore._shared_embedding_function = CustomOpenAIEmbedding(
                     api_key=EMBEDDING_API_KEY,
                     model_name=EMBEDDING_MODEL,
@@ -173,9 +182,9 @@ class DocumentStore:
             except Exception as e:
                 print(f"⚠️  Failed to initialize embedding function: {e}")
                 raise
-        
+
         self.embedding_function = DocumentStore._shared_embedding_function
-        
+
         # Create or get the collections
         print("--- DocumentStore.__init__: Getting/creating 'learning_resources' collection ---")
         self.resources_collection = self._initialize_collection(
@@ -183,7 +192,7 @@ class DocumentStore:
             metadata={"description": "Educational resources and materials"}
         )
         print("--- DocumentStore.__init__: 'learning_resources' collection obtained ---")
-        
+
         print("--- DocumentStore.__init__: Getting/creating 'learning_paths' collection ---")
         self.paths_collection = self._initialize_collection(
             name="learning_paths",

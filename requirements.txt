@@ -22,16 +22,16 @@ Flask-Migrate==4.0.7
 pypandoc>=1.11
 python-magic>=0.4.27; sys_platform != 'win32'
 
-# RAG and embeddings (using OpenAI API, no local models needed)
+# RAG and embeddings (using OpenAI-compatible API, no local models needed)
 faiss-cpu>=1.7.4
 
-# Vector database
-chromadb==0.3.29  # Last version compatible with Pydantic v1
+# Vector database: chromadb removed - it pulls in onnxruntime (~200MB)
+# DocumentStore gracefully degrades without it (HAS_CHROMADB flag)
 
-# Data processing (lightweight)
-scikit-learn>=1.2.2
+# Data processing
 numpy>=1.24.0
 pandas>=2.0.0
+# scikit-learn removed - only needed for optional BM25 hybrid search (saves ~65MB RAM)
 
 Flask-Dance[google]==7.1.0
 

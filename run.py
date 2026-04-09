@@ -8,19 +8,37 @@ from pathlib import Path
 import shutil
 
 # Fix: PEP 649 (Python 3.14+) stores annotations via __annotate_func__
-# instead of __annotations__. pydantic v1 reads namespace.get('__annotations__', {})
-# which is empty, causing all BaseModel fields to crash with "unable to infer type".
+# instead of __annotations__. This breaks pydantic v1 in TWO ways:
+# 1. __annotations__ is empty → fields get Undefined type
+# 2. Type names (e.g. 'dict') resolve to class methods instead of builtins
+#    e.g. BaseModel.dict method instead of builtins.dict type
 # This patch must run BEFORE any pydantic/langchain/langsmith import.
 if sys.version_info >= (3, 14):
     try:
         from pydantic.main import ModelMetaclass as _MC
+        import builtins as _builtins
+
+        # Pre-compute builtin type mapping for fixing annotation resolution
+        _builtin_types = {
+            name: obj for name, obj in vars(_builtins).items()
+            if isinstance(obj, type)
+        }
 
         _orig_mc_new = _MC.__new__
 
         def _patched_mc_new(mcs, name, bases, namespace, **kwargs):
             if '__annotations__' not in namespace and '__annotate_func__' in namespace:
                 try:
-                    namespace['__annotations__'] = namespace['__annotate_func__'](1)
+                    ann = namespace['__annotate_func__'](1)
+                    # Fix #2: PEP 649 evaluates annotations in the class namespace,
+                    # so 'dict' resolves to the .dict() method (pydantic BaseModel)
+                    # instead of the built-in dict type. Replace any annotation that
+                    # is a callable (not a type) whose name matches a builtin type.
+                    for key, value in ann.items():
+                        if not isinstance(value, type) and callable(value) and hasattr(value, '__name__'):
+                            if value.__name__ in _builtin_types:
+                                ann[key] = _builtin_types[value.__name__]
+                    namespace['__annotations__'] = ann
                 except Exception:
                     pass
             return _orig_mc_new(mcs, name, bases, namespace, **kwargs)

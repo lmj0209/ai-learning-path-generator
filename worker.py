@@ -5,11 +5,21 @@ import sys
 if sys.version_info >= (3, 14):
     try:
         from pydantic.main import ModelMetaclass as _MC
+        import builtins as _builtins
+        _builtin_types = {
+            name: obj for name, obj in vars(_builtins).items()
+            if isinstance(obj, type)
+        }
         _orig_mc_new = _MC.__new__
         def _patched_mc_new(mcs, name, bases, namespace, **kwargs):
             if '__annotations__' not in namespace and '__annotate_func__' in namespace:
                 try:
-                    namespace['__annotations__'] = namespace['__annotate_func__'](1)
+                    ann = namespace['__annotate_func__'](1)
+                    for key, value in ann.items():
+                        if not isinstance(value, type) and callable(value) and hasattr(value, '__name__'):
+                            if value.__name__ in _builtin_types:
+                                ann[key] = _builtin_types[value.__name__]
+                    namespace['__annotations__'] = ann
                 except Exception:
                     pass
             return _orig_mc_new(mcs, name, bases, namespace, **kwargs)
