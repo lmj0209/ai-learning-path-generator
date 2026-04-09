@@ -3,7 +3,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from web_app import db, login_manager # Assuming db and login_manager are initialized in __init__.py
-from flask_dance.consumer.storage.sqla import OAuthConsumerMixin
 import uuid
 
 @login_manager.user_loader
@@ -392,11 +391,3 @@ class ConversationSession(db.Model):
     
     def __repr__(self):
         return f'<ConversationSession {self.id} for User {self.user_id}>'
-
-
-class OAuth(OAuthConsumerMixin, db.Model):
-    """Store OAuth tokens for Flask-Dance"""
-    __tablename__ = 'flask_dance_oauth'
-    
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    user = db.relationship('User', backref='oauth_tokens')

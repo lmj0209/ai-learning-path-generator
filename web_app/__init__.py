@@ -12,10 +12,7 @@ login_manager = LoginManager()
 login_manager.login_view = 'auth.login'  # Route for @login_required
 login_manager.login_message_category = 'info'
 
-# Skip Flask-Migrate on Render entirely to avoid
-# "unable to infer type for attribute score" error from
-# Flask-Dance OAuthConsumerMixin + SQLAlchemy 2.0 + Alembic conflict
-# The import itself triggers Alembic at module level
+# Skip Flask-Migrate on Render entirely
 if not os.environ.get('RENDER'):
     from flask_migrate import Migrate
     migrate = Migrate()
@@ -88,12 +85,5 @@ def create_app(config_class=Config):
                     print("Database tables created (fallback)!")
                 except Exception as e2:
                     print(f"Could not create tables: {e2}")
-
-    # Google OAuth blueprint (Flask-Dance)
-    from web_app.google_oauth import google_bp, bp as google_auth_bp
-    # Register Flask-Dance blueprint at /login/google
-    app.register_blueprint(google_bp, url_prefix="/login")
-    # Register our auth blueprint for callbacks and helper routes under /auth
-    app.register_blueprint(google_auth_bp, url_prefix="/auth")
 
     return app

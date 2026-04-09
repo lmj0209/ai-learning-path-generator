@@ -33,8 +33,6 @@ numpy>=1.24.0
 pandas>=2.0.0
 # scikit-learn removed - only needed for optional BM25 hybrid search (saves ~65MB RAM)
 
-Flask-Dance[google]==7.1.0
-
 # Web UI
 flask-wtf>=1.0.0
 Jinja2>=3.0.1
@@ -53,7 +51,3 @@ langsmith==0.0.63
 # Development
 pytest>=7.0.0
 pytest-asyncio>=0.21.0
-
-google-auth>=2.0.0
-google-auth-httplib2>=0.2.0
-google-auth-oauthlib>=0.4.6

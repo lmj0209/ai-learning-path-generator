@@ -10,6 +10,7 @@ from src.data.skills_database import SKILLS_DATABASE, get_all_categories, get_sk
 from src.utils.config import EXPERTISE_LEVELS, TIME_COMMITMENTS
 from src.learning_path import LearningPathGenerator
 from src.data.resources import ResourceManager
+from pydantic import ValidationError as PydanticValidationError
 import uuid
 import time
 
@@ -116,7 +117,7 @@ def generate_path():
         expertise = data.get('expertise_level')
         time_commitment = data.get('time_commitment')
         duration_weeks = data.get('duration_weeks')  # Get user-specified duration
-        ai_provider = 'openai'  # Default to openai
+        ai_provider = os.environ.get('DEFAULT_PROVIDER', 'deepseek')  # Use configured provider
         ai_model = data.get('ai_model')  # Model can be None if provider handles default
 
         # Convert duration_weeks to int if provided
@@ -323,7 +324,7 @@ def generate_stream():
             expertise = data.get('expertise_level')
             time_commitment = data.get('time_commitment')
             duration_weeks = data.get('duration_weeks')
-            ai_provider = 'openai'  # Default to openai
+            ai_provider = os.environ.get('DEFAULT_PROVIDER', 'deepseek')  # Use configured provider
             ai_model = data.get('ai_model')
             
             # Validate required fields
