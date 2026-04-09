@@ -10,6 +10,8 @@ from langchain.vectorstores import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.document_loaders import DirectoryLoader
 
+from src.utils.config import EMBEDDING_API_KEY, EMBEDDING_BASE_URL, EMBEDDING_MODEL
+
 class VectorStore:
     """
     Manages vector storage for RAG capabilities.
@@ -17,15 +19,17 @@ class VectorStore:
     def __init__(self, api_key: Optional[str] = None):
         """
         Initialize the vector store.
-        
+
         Args:
-            api_key: Optional OpenAI API key
+            api_key: Optional API key for embedding provider
         """
-        self.api_key = api_key
-        
-        # Use the latest LangChain OpenAI embeddings
-        # This works with openai v1.0.0+ as LangChain handles the API compatibility
-        self.embeddings = OpenAIEmbeddings(api_key=api_key)
+        self.api_key = api_key or EMBEDDING_API_KEY
+
+        # Initialize embeddings with configurable provider (Gitee AI, OpenAI, etc.)
+        embeddings_kwargs = {"api_key": self.api_key, "model": EMBEDDING_MODEL}
+        if EMBEDDING_BASE_URL and EMBEDDING_BASE_URL != "https://api.openai.com/v1":
+            embeddings_kwargs["base_url"] = EMBEDDING_BASE_URL
+        self.embeddings = OpenAIEmbeddings(**embeddings_kwargs)
             
         self.vector_store_path = Path("vector_db")
         self.vector_store_path.mkdir(exist_ok=True)

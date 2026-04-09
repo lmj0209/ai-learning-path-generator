@@ -25,9 +25,11 @@ except ImportError:
     OPENAI_AVAILABLE = False
 
 try:
-    from src.utils.config import EMBEDDING_MODEL
+    from src.utils.config import EMBEDDING_MODEL, EMBEDDING_BASE_URL, EMBEDDING_API_KEY
 except Exception:
-    EMBEDDING_MODEL = "text-embedding-3-small"
+    EMBEDDING_MODEL = "BAAI/bge-m3"
+    EMBEDDING_BASE_URL = "https://ai.gitee.com/v1"
+    EMBEDDING_API_KEY = None
 
 class SemanticCache:
     """
@@ -98,14 +100,17 @@ class SemanticCache:
         else:
             print("⚠️  Redis not available. Caching disabled.")
         
-        # Initialize OpenAI for embeddings
+        # Initialize OpenAI for embeddings (supports Gitee AI and other OpenAI-compatible APIs)
         if OPENAI_AVAILABLE:
-            api_key = openai_api_key or os.getenv("OPENAI_API_KEY")
+            api_key = openai_api_key or EMBEDDING_API_KEY or os.getenv("OPENAI_API_KEY")
             if api_key:
-                self.openai_client = OpenAI(api_key=api_key)
+                client_kwargs = {"api_key": api_key}
+                if EMBEDDING_BASE_URL:
+                    client_kwargs["base_url"] = EMBEDDING_BASE_URL
+                self.openai_client = OpenAI(**client_kwargs)
         
         if not self.openai_client:
-            print("⚠️  OpenAI not available. Semantic caching disabled.")
+            print("⚠️  Embedding API not available. Semantic caching disabled.")
             self.enabled = False
     
     def _get_embedding(self, text: str) -> Optional[np.ndarray]:

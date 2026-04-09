@@ -48,9 +48,14 @@ DEFAULT_PROVIDER = os.getenv("DEFAULT_PROVIDER", "openai").lower()
 # Using GPT-4o-mini: 3x cheaper than GPT-3.5-turbo, better quality!
 # Cost: $0.15/1M input tokens vs $0.50 for GPT-3.5
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "gpt-4o-mini")
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")  # Cheaper embeddings
 MAX_TOKENS = int(os.getenv("MAX_TOKENS", "1000"))
 TEMPERATURE = float(os.getenv("TEMPERATURE", "0.7"))
+
+# Embedding configuration - supports OpenAI-compatible APIs (Gitee AI, etc.)
+# Default: Gitee AI (模力方舟) BAAI/bge-m3 - free, multilingual, 1024 dimensions
+EMBEDDING_API_KEY = os.getenv("EMBEDDING_API_KEY") or OPENAI_API_KEY
+EMBEDDING_BASE_URL = os.getenv("EMBEDDING_BASE_URL", "https://ai.gitee.com/v1")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3")
 
 # Alternative models for different use cases
 REASONING_MODEL = os.getenv("REASONING_MODEL", "gpt-4o-mini")  # For complex reasoning

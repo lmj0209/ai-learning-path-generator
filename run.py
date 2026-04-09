@@ -52,8 +52,8 @@ else:
     print("--- Running on Render, skipping .env file loading ---")
 
 # Check if any API key is set
-if not os.getenv("OPENAI_API_KEY") and not os.getenv("DEEPSEEK_API_KEY"):
-    print("WARNING: Neither OPENAI_API_KEY nor DEEPSEEK_API_KEY found in environment variables.")
+if not os.getenv("OPENAI_API_KEY") and not os.getenv("DEEPSEEK_API_KEY") and not os.getenv("EMBEDDING_API_KEY"):
+    print("WARNING: Neither OPENAI_API_KEY, DEEPSEEK_API_KEY nor EMBEDDING_API_KEY found in environment variables.")
     if not is_render:
         # Only exit in local development; on Render, the app should still start
         print("Please set at least one API key before running the application.")

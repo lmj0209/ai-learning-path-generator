@@ -30,8 +30,9 @@ except ImportError:
 from langchain.schema import Document
 
 from src.utils.config import (
-    VECTOR_DB_PATH, 
-    OPENAI_API_KEY,
+    VECTOR_DB_PATH,
+    EMBEDDING_API_KEY,
+    EMBEDDING_BASE_URL,
     EMBEDDING_MODEL,
     # Advanced RAG config
     ENABLE_SEMANTIC_CACHE,
@@ -143,10 +144,13 @@ class DocumentStore:
             try:
                 # Create custom embedding function compatible with OpenAI v1.x
                 from openai import OpenAI
-                
+
                 class CustomOpenAIEmbedding:
-                    def __init__(self, api_key, model_name="text-embedding-ada-002"):
-                        self.client = OpenAI(api_key=api_key)
+                    def __init__(self, api_key, model_name="BAAI/bge-m3", base_url=None):
+                        client_kwargs = {"api_key": api_key}
+                        if base_url:
+                            client_kwargs["base_url"] = base_url
+                        self.client = OpenAI(**client_kwargs)
                         self.model_name = model_name
                     
                     def __call__(self, texts):
@@ -161,8 +165,9 @@ class DocumentStore:
                         return [item.embedding for item in response.data]
                 
                 DocumentStore._shared_embedding_function = CustomOpenAIEmbedding(
-                    api_key=OPENAI_API_KEY,
-                    model_name=EMBEDDING_MODEL
+                    api_key=EMBEDDING_API_KEY,
+                    model_name=EMBEDDING_MODEL,
+                    base_url=EMBEDDING_BASE_URL
                 )
                 print("✅ Shared embedding function initialized")
             except Exception as e:

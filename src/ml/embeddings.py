@@ -1,6 +1,7 @@
 """
 Vector embedding utilities for the AI Learning Path Generator.
 Handles text vectorization for semantic search.
+Supports OpenAI-compatible APIs (Gitee AI, etc.)
 """
 from typing import List, Dict, Any, Optional, Union
 import numpy as np
@@ -10,29 +11,35 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 
-from src.utils.config import OPENAI_API_KEY, EMBEDDING_MODEL
+from src.utils.config import EMBEDDING_API_KEY, EMBEDDING_BASE_URL, EMBEDDING_MODEL
 
 class EmbeddingService:
     """
     Service for generating and managing text embeddings.
+    Supports OpenAI-compatible APIs including Gitee AI.
     """
     def __init__(self, api_key: Optional[str] = None):
         """
         Initialize the embedding service.
-        
+
         Args:
-            api_key: Optional OpenAI API key
+            api_key: Optional API key for embedding provider
         """
-        self.api_key = api_key or OPENAI_API_KEY
-        
+        self.api_key = api_key or EMBEDDING_API_KEY
+
         if not self.api_key:
-            raise ValueError("OpenAI API key is required. Please provide it or set the OPENAI_API_KEY environment variable.")
-        
-        # Initialize the embedding model - langchain_openai handles the new API format internally
-        self.embeddings = OpenAIEmbeddings(
-            api_key=self.api_key,
-            model=EMBEDDING_MODEL
-        )
+            raise ValueError("Embedding API key is required. Set EMBEDDING_API_KEY or OPENAI_API_KEY environment variable.")
+
+        # Initialize the embedding model with configurable base_url
+        embeddings_kwargs = {
+            "api_key": self.api_key,
+            "model": EMBEDDING_MODEL,
+        }
+        # Pass base_url only if it's not the default OpenAI endpoint
+        if EMBEDDING_BASE_URL and EMBEDDING_BASE_URL != "https://api.openai.com/v1":
+            embeddings_kwargs["base_url"] = EMBEDDING_BASE_URL
+
+        self.embeddings = OpenAIEmbeddings(**embeddings_kwargs)
         
         # Initialize text splitter for chunking
         self.text_splitter = RecursiveCharacterTextSplitter(
