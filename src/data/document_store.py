@@ -18,9 +18,15 @@ from typing import List, Dict, Any, Optional
 from pathlib import Path
 import threading
 
-import chromadb
-from chromadb.config import Settings
-from chromadb.utils import embedding_functions
+try:
+    import chromadb
+    from chromadb.config import Settings
+    from chromadb.utils import embedding_functions
+    HAS_CHROMADB = True
+except ImportError:
+    HAS_CHROMADB = False
+    print("WARNING: chromadb not installed. Vector search features will be limited.")
+
 from langchain.schema import Document
 
 from src.utils.config import (
@@ -111,19 +117,23 @@ class DocumentStore:
         # Initialize shared client (connection pooling)
         if DocumentStore._shared_client is None:
             print("--- DocumentStore.__init__: Initializing shared chromadb.Client ---")
-            try:
-                DocumentStore._shared_client = chromadb.Client(
-                    Settings(
-                        chroma_db_impl="duckdb+parquet",
-                        persist_directory=self.db_path,
-                        anonymized_telemetry=False,
-                        allow_reset=True
+            if not HAS_CHROMADB:
+                print("⚠️  ChromaDB not installed. DocumentStore will operate in limited mode (no vector search).")
+                DocumentStore._shared_client = None
+            else:
+                try:
+                    DocumentStore._shared_client = chromadb.Client(
+                        Settings(
+                            chroma_db_impl="duckdb+parquet",
+                            persist_directory=self.db_path,
+                            anonymized_telemetry=False,
+                            allow_reset=True
+                        )
                     )
-                )
-                print("✅ Shared ChromaDB client initialized (connection pooling active)")
-            except Exception as e:
-                print(f"⚠️  Failed to initialize ChromaDB client: {e}")
-                raise
+                    print("✅ Shared ChromaDB client initialized (connection pooling active)")
+                except Exception as e:
+                    print(f"⚠️  Failed to initialize ChromaDB client: {e}")
+                    DocumentStore._shared_client = None
         
         self.client = DocumentStore._shared_client
         
@@ -275,6 +285,8 @@ class DocumentStore:
         """
         # Get the collection
         try:
+            if not HAS_CHROMADB or self.client is None:
+                return []
             collection = self._initialize_collection(name=collection_name)
         except Exception:
             # Collection doesn't exist
