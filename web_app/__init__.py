@@ -4,7 +4,6 @@ from rq import Queue
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-from flask_migrate import Migrate
 from config import Config
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -12,7 +11,16 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'  # Route for @login_required
 login_manager.login_message_category = 'info'
-migrate = Migrate()
+
+# Skip Flask-Migrate on Render entirely to avoid
+# "unable to infer type for attribute score" error from
+# Flask-Dance OAuthConsumerMixin + SQLAlchemy 2.0 + Alembic conflict
+# The import itself triggers Alembic at module level
+if not os.environ.get('RENDER'):
+    from flask_migrate import Migrate
+    migrate = Migrate()
+else:
+    migrate = None
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -30,10 +38,8 @@ def create_app(config_class=Config):
     db.init_app(app)
     login_manager.init_app(app)
 
-    # On Render: skip Flask-Migrate/Alembic entirely to avoid
-    # "unable to infer type for attribute score" error from
-    # Flask-Dance OAuthConsumerMixin + SQLAlchemy 2.0 + Alembic conflict
-    if not os.environ.get('RENDER'):
+    # Only init Flask-Migrate when NOT on Render
+    if migrate is not None:
         migrate.init_app(app, db)
 
     # Initialize Redis connection for RQ
@@ -69,19 +75,19 @@ def create_app(config_class=Config):
                 inspector = inspect(db.engine)
                 existing_tables = inspector.get_table_names()
                 if not existing_tables or 'users' not in existing_tables:
-                    print("🔧 Creating database tables (first deploy)...")
+                    print("Creating database tables (first deploy)...")
                     db.create_all()
-                    print("✅ Database tables created successfully!")
+                    print("Database tables created successfully!")
                 else:
-                    print(f"✅ Database tables already exist ({len(existing_tables)} tables)")
+                    print(f"Database tables already exist ({len(existing_tables)} tables)")
             except Exception as e:
-                print(f"⚠️  Database table check/create: {e}")
+                print(f"Database table check/create: {e}")
                 # Try create_all anyway
                 try:
                     db.create_all()
-                    print("✅ Database tables created (fallback)!")
+                    print("Database tables created (fallback)!")
                 except Exception as e2:
-                    print(f"⚠️  Could not create tables: {e2}")
+                    print(f"Could not create tables: {e2}")
 
     # Google OAuth blueprint (Flask-Dance)
     from web_app.google_oauth import google_bp, bp as google_auth_bp
