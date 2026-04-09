@@ -297,14 +297,16 @@ def estimate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
     """
     # Pricing per 1M tokens (as of 2024)
     pricing = {
+        "Qwen/Qwen3-8B": {"input": 0.0, "output": 0.0},  # Gitee AI free model
         "gpt-4o-mini": {"input": 0.15, "output": 0.60},
         "gpt-4o": {"input": 5.00, "output": 15.00},
         "gpt-3.5-turbo": {"input": 0.50, "output": 1.50},
         "gpt-4": {"input": 30.00, "output": 60.00},
+        "deepseek-chat": {"input": 0.14, "output": 0.28},
     }
-    
-    # Default to gpt-4o-mini pricing if model not found
-    model_pricing = pricing.get(model, pricing["gpt-4o-mini"])
+
+    # Default to free pricing if model not found (safer for new models)
+    model_pricing = pricing.get(model, {"input": 0.0, "output": 0.0})
     
     input_cost = (input_tokens / 1_000_000) * model_pricing["input"]
     output_cost = (output_tokens / 1_000_000) * model_pricing["output"]

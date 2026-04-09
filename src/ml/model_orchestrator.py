@@ -31,6 +31,8 @@ from langchain.chains import LLMChain
 from src.utils.config import (
     OPENAI_API_KEY,
     DEEPSEEK_API_KEY,  # Kept for legacy compatibility
+    GITEE_API_KEY,
+    GITEE_BASE_URL,
     DEFAULT_PROVIDER,
     DEFAULT_MODEL,
     MAX_TOKENS,
@@ -66,38 +68,29 @@ class ModelOrchestrator:
         self.memory = []
         
         # Set up API key based on selected provider
-        if self.provider == 'openai':
+        if self.provider == 'gitee':
+            self.api_key = api_key or GITEE_API_KEY
+            if not self.api_key:
+                raise ValueError("Gitee AI API key is required. Please provide it or set the GITEE_API_KEY environment variable.")
+            print(f"--- ModelOrchestrator.__init__: Gitee AI provider selected, base URL: {GITEE_BASE_URL} ---")
+        elif self.provider == 'openai':
             self.api_key = api_key or OPENAI_API_KEY
             if not self.api_key:
                 raise ValueError("OpenAI API key is required. Please provide it or set the OPENAI_API_KEY environment variable.")
-            
+
             print("--- ModelOrchestrator.__init__: Preparing to initialize ChatOpenAI ---")
             print(f"--- ModelOrchestrator.__init__: API Key: {str(self.api_key)[:15]}..., Model: {DEFAULT_MODEL}, Temp: {TEMPERATURE}, Max Tokens: {MAX_TOKENS} ---")
-            # self.llm = ChatOpenAI(
-            #     api_key=self.api_key,
-            #     model_name=DEFAULT_MODEL,
-            #     temperature=TEMPERATURE,
-            #     max_tokens=MAX_TOKENS
-            # )
             print("--- ModelOrchestrator.__init__: ChatOpenAI initialization SKIPPED ---")
-            
+
             print("--- ModelOrchestrator.__init__: Preparing to initialize OpenAI (base_llm) ---")
-            # self.base_llm = OpenAI(
-            #     api_key=self.api_key,
-            #     model_name=DEFAULT_MODEL,
-            #     temperature=TEMPERATURE,
-            #     max_tokens=MAX_TOKENS
-            # )
             print("--- ModelOrchestrator.__init__: OpenAI (base_llm) initialization SKIPPED ---")
         elif self.provider == 'deepseek':
             self.api_key = api_key or DEEPSEEK_API_KEY
             if not self.api_key:
                 raise ValueError("DeepSeek API key is required. Please provide it or set the DEEPSEEK_API_KEY environment variable.")
             print("--- ModelOrchestrator.__init__: DeepSeek provider selected, client initialization SKIPPED for now ---")
-        # Only OpenAI and DeepSeek providers are supported now
-        # (OpenAI is the primary and recommended provider)
         else:
-            raise ValueError(f"Unsupported provider: {self.provider}. Use 'openai' or 'deepseek'.")
+            raise ValueError(f"Unsupported provider: {self.provider}. Use 'gitee', 'openai', or 'deepseek'.")
             
         # Track current model name
         self.model_name = DEFAULT_MODEL
@@ -110,6 +103,9 @@ class ModelOrchestrator:
             # Allow environment variable override but default to the official DeepSeek chat model
             self.model_name = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
             print(f"--- ModelOrchestrator.__init__: DeepSeek provider detected, using model: {self.model_name} ---")
+        elif self.provider == 'gitee':
+            self.model_name = os.getenv("DEFAULT_MODEL", "Qwen/Qwen3-8B")
+            print(f"--- ModelOrchestrator.__init__: Gitee AI provider detected, using model: {self.model_name} ---")
 
         print("--- ModelOrchestrator.__init__: SKIPPING init_language_model call ---")
         # Initialize the language model based on provider
@@ -133,7 +129,23 @@ class ModelOrchestrator:
             
         # Initialize based on provider
         try:
-            if self.provider == 'openai':
+            if self.provider == 'gitee':
+                print(f"--- ModelOrchestrator.init_language_model: Initializing ChatOpenAI for Gitee AI ---")
+                from openai import OpenAI as OpenAIClient
+                client = OpenAIClient(
+                    api_key=self.api_key,
+                    base_url=GITEE_BASE_URL
+                )
+                self.llm = ChatOpenAI(
+                    client=client,
+                    model=self.model_name,
+                    temperature=temp,
+                    max_tokens=MAX_TOKENS,
+                    openai_api_key=self.api_key,
+                    openai_api_base=GITEE_BASE_URL,
+                )
+                print(f"--- ModelOrchestrator.init_language_model: ChatOpenAI for Gitee AI initialized ---")
+            elif self.provider == 'openai':
                 print(f"--- ModelOrchestrator.init_language_model: Initializing ChatOpenAI for {self.provider} ---")
                 # Initialize with explicit client for better compatibility
                 from openai import OpenAI as OpenAIClient
@@ -183,13 +195,14 @@ class ModelOrchestrator:
             # Update API key if provided
             if api_key:
                 self.api_key = api_key
+            elif self.provider == 'gitee':
+                self.api_key = GITEE_API_KEY
             elif self.provider == 'openai':
                 self.api_key = OPENAI_API_KEY
             elif self.provider == 'deepseek':
                 self.api_key = DEEPSEEK_API_KEY
-            # OpenAI is the primary provider now
             else:
-                raise ValueError(f"Unsupported provider: {provider}. Use 'openai' or 'deepseek'.")
+                raise ValueError(f"Unsupported provider: {provider}. Use 'gitee', 'openai', or 'deepseek'.")
                 
             # Update model name if provided
             if model_name:
@@ -268,6 +281,13 @@ class ModelOrchestrator:
                 if self.provider == 'deepseek':
                     # Use DeepSeek-specific completion
                     response_text = self._deepseek_completion(
+                        full_prompt,
+                        temp,
+                        system_message="You are an expert educational AI assistant that specializes in creating personalized learning paths."
+                    )
+                elif self.provider == 'gitee':
+                    # Use Gitee AI (OpenAI-compatible) completion
+                    response_text = self._gitee_completion(
                         full_prompt,
                         temp,
                         system_message="You are an expert educational AI assistant that specializes in creating personalized learning paths."
@@ -371,7 +391,12 @@ class ModelOrchestrator:
         
         try:
             from openai import OpenAI
-            if self.provider == 'deepseek':
+            if self.provider == 'gitee':
+                client = OpenAI(
+                    api_key=GITEE_API_KEY,
+                    base_url=GITEE_BASE_URL
+                )
+            elif self.provider == 'deepseek':
                 client = OpenAI(
                     api_key=DEEPSEEK_API_KEY,
                     base_url="https://api.deepseek.com"
@@ -500,13 +525,20 @@ class ModelOrchestrator:
             print(f"DEBUG: Prompt preview: {full_prompt[:200]}...")
             
             # Print API key details for debugging (safely)
-            if self.provider == 'openai':
+            if self.provider == 'gitee':
+                api_key = GITEE_API_KEY
+                if api_key:
+                    print(f"DEBUG: Using Gitee AI API key starting with: {api_key[:5]}{'*' * 10}")
+                else:
+                    print("DEBUG: WARNING - No Gitee AI API key found!")
+
+            elif self.provider == 'openai':
                 api_key = OPENAI_API_KEY
                 if api_key:
                     print(f"DEBUG: Using OpenAI API key starting with: {api_key[:5]}{'*' * 10}")
                 else:
                     print("DEBUG: WARNING - No OpenAI API key found!")
-                    
+
             elif self.provider == 'deepseek':
                 api_key = DEEPSEEK_API_KEY
                 if api_key:
@@ -516,7 +548,13 @@ class ModelOrchestrator:
                     
             # OpenAI is the primary provider now
             
-            if self.provider == 'openai':
+            if self.provider == 'gitee':
+                response_text = self._gitee_completion(
+                    full_prompt,
+                    temp,
+                    system_message="You are an expert AI assistant that specializes in generating structured responses following specified schemas. Always include all required fields in your JSON response."
+                )
+            elif self.provider == 'openai':
                 from src.direct_openai import generate_completion
                 print("Attempting to generate OpenAI completion...")
                 response_text = generate_completion(
@@ -536,7 +574,7 @@ class ModelOrchestrator:
                 )
             # OpenAI is the primary provider now
             else:
-                raise ValueError(f"Unknown provider: {self.provider}")
+                raise ValueError(f"Unknown provider: {self.provider}. Use 'gitee', 'openai', or 'deepseek'.")
                 
             print(f"DEBUG: API call completed in {time.time() - start_time:.2f} seconds")
             if response_text:
@@ -722,7 +760,7 @@ class ModelOrchestrator:
     
     def _deepseek_completion(self, prompt: str, temperature: float, system_message: str = None):
         """Call DeepSeek API for chat completion.
-        
+
         The helper explicitly adds a **system** message reminding the model to comply with the
         schema and strictly return JSON. We have observed that without this guard-rail the
         DeepSeek model occasionally omits required fields which later causes Pydantic
@@ -730,28 +768,28 @@ class ModelOrchestrator:
         reliability.
         """
         import requests, traceback, json, time
-        
+
         api_key = DEEPSEEK_API_KEY
         url = "https://api.deepseek.com/v1/chat/completions"
-        
+
         system_msg = (
             system_message
             or "You are an expert AI assistant that MUST output ONLY valid JSON strictly "
                 "following the user's schema instructions. Do not add any commentary, markdown "
                 "code fences or explanations."
         )
-        
+
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
-        
+
         payload_base = {
             "model": self.model_name if hasattr(self, "model_name") else "deepseek-chat",
             "temperature": temperature or 0.2,
             "max_tokens": int(os.getenv("MAX_TOKENS", "4096")),
         }
-        
+
         def _post(messages):
             start = time.time()
             pl = {**payload_base, "messages": messages}
@@ -768,7 +806,7 @@ class ModelOrchestrator:
                 f"{len(content)} chars"
             )
             return content
-        
+
         try:
             # 1st attempt – full prompt
             messages = [
@@ -776,14 +814,14 @@ class ModelOrchestrator:
                 {"role": "user", "content": prompt},
             ]
             response_text = _post(messages)
-            
+
             # Quick JSON sanity check; if it fails we'll retry with a reduced prompt.
             try:
                 json.loads(response_text.strip("`"))
                 return response_text
             except Exception:
                 print("DEBUG: DeepSeek response not valid JSON, retrying with simplified instructions...")
-            
+
             # 2nd attempt – simplified prompt focusing on schema only
             simple_prompt = (
                 "Provide ONLY the JSON that matches the schema. Do not wrap it in anything."\
@@ -795,6 +833,82 @@ class ModelOrchestrator:
             return _post(messages_retry)
         except Exception as e:
             print(f"DEBUG: DeepSeek API call failed: {str(e)}")
+            print(traceback.format_exc())
+            raise
+
+    def _gitee_completion(self, prompt: str, temperature: float, system_message: str = None):
+        """Call Gitee AI (模力方舟) API for chat completion.
+
+        Gitee AI is OpenAI-compatible at https://ai.gitee.com/v1.
+        Supports free models like Qwen/Qwen3-8B, deepseek-ai/DeepSeek-V3, etc.
+        """
+        import requests, traceback, json, time
+
+        api_key = GITEE_API_KEY
+        base_url = GITEE_BASE_URL
+        url = f"{base_url}/chat/completions"
+
+        system_msg = (
+            system_message
+            or "You are an expert AI assistant that MUST output ONLY valid JSON strictly "
+                "following the user's schema instructions. Do not add any commentary, markdown "
+                "code fences or explanations."
+        )
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+
+        payload_base = {
+            "model": self.model_name if hasattr(self, "model_name") else "Qwen/Qwen3-8B",
+            "temperature": temperature or 0.2,
+            "max_tokens": int(os.getenv("MAX_TOKENS", "4096")),
+        }
+
+        def _post(messages):
+            start = time.time()
+            pl = {**payload_base, "messages": messages}
+            print(
+                f"DEBUG: Gitee AI request with {len(json.dumps(pl))} chars payload, "
+                f"messages={len(messages)}"
+            )
+            resp = requests.post(url, headers=headers, json=pl, timeout=150)
+            resp.raise_for_status()
+            data = resp.json()
+            content = data["choices"][0]["message"]["content"]
+            print(
+                f"DEBUG: Gitee AI response in {time.time()-start:.2f}s with "
+                f"{len(content)} chars"
+            )
+            return content
+
+        try:
+            # 1st attempt – full prompt
+            messages = [
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": prompt},
+            ]
+            response_text = _post(messages)
+
+            # Quick JSON sanity check; if it fails we'll retry with a reduced prompt.
+            try:
+                json.loads(response_text.strip("`"))
+                return response_text
+            except Exception:
+                print("DEBUG: Gitee AI response not valid JSON, retrying with simplified instructions...")
+
+            # 2nd attempt – simplified prompt focusing on schema only
+            simple_prompt = (
+                "Provide ONLY the JSON that matches the schema. Do not wrap it in anything."
+            )
+            messages_retry = [
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": prompt + "\n\n" + simple_prompt},
+            ]
+            return _post(messages_retry)
+        except Exception as e:
+            print(f"DEBUG: Gitee AI API call failed: {str(e)}")
             print(traceback.format_exc())
             raise
 

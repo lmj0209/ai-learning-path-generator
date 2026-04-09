@@ -117,7 +117,7 @@ def generate_path():
         expertise = data.get('expertise_level')
         time_commitment = data.get('time_commitment')
         duration_weeks = data.get('duration_weeks')  # Get user-specified duration
-        ai_provider = os.environ.get('DEFAULT_PROVIDER', 'deepseek')  # Use configured provider
+        ai_provider = os.environ.get('DEFAULT_PROVIDER', 'gitee')  # Use configured provider
         ai_model = data.get('ai_model')  # Model can be None if provider handles default
 
         # Convert duration_weeks to int if provided
@@ -326,7 +326,7 @@ def generate_stream():
             expertise = data.get('expertise_level')
             time_commitment = data.get('time_commitment')
             duration_weeks = data.get('duration_weeks')
-            ai_provider = os.environ.get('DEFAULT_PROVIDER', 'deepseek')  # Use configured provider
+            ai_provider = os.environ.get('DEFAULT_PROVIDER', 'gitee')  # Use configured provider
             ai_model = data.get('ai_model')
             
             # Validate required fields
@@ -967,6 +967,18 @@ def clear_session_route(): # Renamed to avoid conflict with flask.session
 import os
 from openai import OpenAI
 
+# Gitee AI (模力方舟) - OpenAI-compatible API
+_GITEE_API_KEY = os.getenv('GITEE_API_KEY') or os.getenv('EMBEDDING_API_KEY') or os.getenv('OPENAI_API_KEY')
+_GITEE_BASE_URL = os.getenv('GITEE_BASE_URL', 'https://ai.gitee.com/v1')
+_DEFAULT_MODEL = os.getenv('DEFAULT_MODEL', 'Qwen/Qwen3-8B')
+
+def _get_ai_client():
+    """Get OpenAI-compatible client configured for Gitee AI (模力方舟)."""
+    return OpenAI(
+        api_key=_GITEE_API_KEY,
+        base_url=_GITEE_BASE_URL
+    )
+
 @bp.route('/chatbot_query', methods=['POST'])
 def chatbot_query():
     """
@@ -1003,10 +1015,9 @@ def chatbot_query():
     try:
         # STATELESS CHATBOT - No database dependencies
         # Works for both authenticated and anonymous users
-        from openai import OpenAI
-        
-        # Initialize OpenAI client
-        openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
+        # Initialize AI client (Gitee AI)
+        openai_client = _get_ai_client()
         
         # Get learning path context if available
         path_context = ""
@@ -1079,9 +1090,9 @@ When users ask about modifications:
 3. Suggest concrete ways to adapt the path
 4. Remind them they can generate a new path if major changes are needed"""
         
-        # Generate response using OpenAI directly
+        # Generate response using Gitee AI
         completion = openai_client.chat.completions.create(
-            model=os.getenv('DEFAULT_MODEL', 'gpt-4o-mini'),
+            model=_DEFAULT_MODEL,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message}
@@ -1257,11 +1268,10 @@ Current user question: {user_message}
 Provide a helpful, context-aware response that acknowledges our conversation history."""
         
         # Generate AI response
-        from openai import OpenAI
-        openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-        
+        openai_client = _get_ai_client()
+
         completion = openai_client.chat.completions.create(
-            model=os.getenv('DEFAULT_MODEL', 'gpt-4o-mini'),
+            model=_DEFAULT_MODEL,
             messages=[
                 {"role": "system", "content": system_prompt}
             ],
@@ -1537,7 +1547,7 @@ What specific modification would you like to make?"""
             
             else:
                 # General path-related conversation
-                client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+                client = _get_ai_client()
                 system_prompt = """You are an AI Learning Path Specialist. Help users:
 - Understand how to create effective learning paths
 - Plan their learning journey
@@ -1546,9 +1556,9 @@ What specific modification would you like to make?"""
 
 Be encouraging, practical, and guide them to use the form above for generating complete paths.
 Keep responses concise and actionable."""
-                
+
                 completion = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
+                    model=_DEFAULT_MODEL,
                     messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_message}
@@ -1559,7 +1569,7 @@ Keep responses concise and actionable."""
         
         # Chat mode: General conversation with path generation capability
         else:
-            client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+            client = _get_ai_client()
             system_prompt = """You are a friendly AI Learning Assistant. You help users:
 - Answer questions about learning and education
 - Provide study tips and motivation
@@ -1585,9 +1595,9 @@ Example: If user says "I want to transition from mechanical engineering to data 
 - Then respond with: "GENERATE_PATH: Career transition from Mechanical Engineering to Data Analyst | beginner | 10 hours per week | hands-on"
 
 Be warm, supportive, and concise."""
-            
+
             completion = client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model=_DEFAULT_MODEL,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message}
@@ -1703,15 +1713,14 @@ Be warm, supportive, and conversational. Remember context from previous messages
         # Prepend system message
         api_messages = [{"role": "system", "content": system_prompt}] + messages_for_api + [{"role": "user", "content": user_message}]
         
-        # Call OpenAI API
-        from openai import OpenAI
+        # Call AI API (Gitee AI)
         import time
-        
-        client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-        
+
+        client = _get_ai_client()
+
         start_time = time.time()
         completion = client.chat.completions.create(
-            model=os.getenv('DEFAULT_MODEL', 'gpt-4o-mini'),
+            model=_DEFAULT_MODEL,
             messages=api_messages,
             temperature=0.7,
             max_tokens=500

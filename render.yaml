@@ -45,11 +45,17 @@ services:
       - key: DEEPSEEK_API_KEY
         sync: false
 
+      - key: GITEE_API_KEY
+        sync: false
+
       - key: DEFAULT_PROVIDER
-        value: deepseek
+        value: gitee
 
       - key: DEFAULT_MODEL
-        value: deepseek-chat
+        value: Qwen/Qwen3-8B
+
+      - key: GITEE_BASE_URL
+        value: https://ai.gitee.com/v1
 
       - key: EMBEDDING_API_KEY
         sync: false
@@ -88,11 +94,17 @@ services:
       - key: DEEPSEEK_API_KEY
         sync: false
 
+      - key: GITEE_API_KEY
+        sync: false
+
       - key: DEFAULT_PROVIDER
-        value: deepseek
+        value: gitee
 
       - key: DEFAULT_MODEL
-        value: deepseek-chat
+        value: Qwen/Qwen3-8B
+
+      - key: GITEE_BASE_URL
+        value: https://ai.gitee.com/v1
 
       - key: EMBEDDING_API_KEY
         sync: false

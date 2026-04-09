@@ -31,6 +31,8 @@ DEV_MODE = os.getenv('DEV_MODE', 'False').lower() == 'true'
 # API Keys
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+GITEE_API_KEY = os.getenv("GITEE_API_KEY") or os.getenv("EMBEDDING_API_KEY") or OPENAI_API_KEY
+GITEE_BASE_URL = os.getenv("GITEE_BASE_URL", "https://ai.gitee.com/v1")
 # Deprecated - kept for backward compatibility but not used
 PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
 # Perplexity pricing (cost per 1K tokens) - default 0 so users can opt-in
@@ -38,16 +40,15 @@ PERPLEXITY_PROMPT_COST_PER_1K = float(os.getenv("PERPLEXITY_PROMPT_COST_PER_1K",
 PERPLEXITY_COMPLETION_COST_PER_1K = float(os.getenv("PERPLEXITY_COMPLETION_COST_PER_1K", "0"))
 
 # Ensure at least one API key is available (unless in DEV_MODE)
-if not DEV_MODE and not OPENAI_API_KEY and not DEEPSEEK_API_KEY:
-    raise EnvironmentError("OPENAI_API_KEY or DEEPSEEK_API_KEY environment variable is required (unless DEV_MODE=true).")
+if not DEV_MODE and not OPENAI_API_KEY and not DEEPSEEK_API_KEY and not GITEE_API_KEY:
+    raise EnvironmentError("OPENAI_API_KEY, DEEPSEEK_API_KEY, or GITEE_API_KEY environment variable is required (unless DEV_MODE=true).")
 
-# Default model provider (can be 'openai' or 'deepseek')
-DEFAULT_PROVIDER = os.getenv("DEFAULT_PROVIDER", "openai").lower()
+# Default model provider (can be 'openai', 'deepseek', or 'gitee')
+DEFAULT_PROVIDER = os.getenv("DEFAULT_PROVIDER", "gitee").lower()
 
 # Model configuration
-# Using GPT-4o-mini: 3x cheaper than GPT-3.5-turbo, better quality!
-# Cost: $0.15/1M input tokens vs $0.50 for GPT-3.5
-DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "gpt-4o-mini")
+# Default: Gitee AI (模力方舟) Qwen3-8B - free, capable, multilingual
+DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "Qwen/Qwen3-8B")
 MAX_TOKENS = int(os.getenv("MAX_TOKENS", "4096"))
 TEMPERATURE = float(os.getenv("TEMPERATURE", "0.7"))
 
@@ -58,8 +59,8 @@ EMBEDDING_BASE_URL = os.getenv("EMBEDDING_BASE_URL", "https://ai.gitee.com/v1")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3")
 
 # Alternative models for different use cases
-REASONING_MODEL = os.getenv("REASONING_MODEL", "gpt-4o-mini")  # For complex reasoning
-SIMPLE_MODEL = os.getenv("SIMPLE_MODEL", "gpt-4o-mini")  # For simple tasks
+REASONING_MODEL = os.getenv("REASONING_MODEL", "Qwen/Qwen3-8B")  # For complex reasoning
+SIMPLE_MODEL = os.getenv("SIMPLE_MODEL", "Qwen/Qwen3-8B")  # For simple tasks
 
 # (Deprecated) Perplexity settings – retained for legacy tests but not used by the app.
 PERPLEXITY_MODEL = os.getenv("PERPLEXITY_MODEL", "pplx-7b-online")  # noqa: E501
@@ -110,12 +111,12 @@ HYBRID_TOP_K = int(os.getenv("HYBRID_TOP_K", "20"))
 
 # Query Rewriting
 QUERY_REWRITE_ENABLED = os.getenv("QUERY_REWRITE_ENABLED", "True").lower() == "true"
-QUERY_REWRITE_MODEL = os.getenv("QUERY_REWRITE_MODEL", "gpt-3.5-turbo")
+QUERY_REWRITE_MODEL = os.getenv("QUERY_REWRITE_MODEL", "Qwen/Qwen3-8B")
 QUERY_REWRITE_MAX_TOKENS = int(os.getenv("QUERY_REWRITE_MAX_TOKENS", "100"))
 
 # Contextual Compression
 CONTEXTUAL_COMPRESSION_ENABLED = os.getenv("CONTEXTUAL_COMPRESSION_ENABLED", "True").lower() == "true"
-COMPRESSION_MODEL = os.getenv("COMPRESSION_MODEL", "gpt-3.5-turbo")
+COMPRESSION_MODEL = os.getenv("COMPRESSION_MODEL", "Qwen/Qwen3-8B")
 COMPRESSION_MAX_TOKENS = int(os.getenv("COMPRESSION_MAX_TOKENS", "500"))
 
 # Reranking Configuration

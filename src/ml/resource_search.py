@@ -302,18 +302,25 @@ def search_resources(query: str, k: int = 3, timeout: int = 45, trusted_sources:
         except Exception as exc:
             logging.warning(f"Perplexity resource search failed: {exc}. Falling back to OpenAI...")
 
-    # Fallback to OpenAI or DeepSeek
+    # Fallback to Gitee AI, DeepSeek, or OpenAI
+    gitee_key = os.getenv("GITEE_API_KEY") or os.getenv("EMBEDDING_API_KEY")
     deepseek_key = os.getenv("DEEPSEEK_API_KEY")
     openai_key = os.getenv("OPENAI_API_KEY")
-    api_key = deepseek_key or openai_key
+    api_key = gitee_key or deepseek_key or openai_key
     if not api_key:
-        logging.info("No API key set (DEEPSEEK_API_KEY or OPENAI_API_KEY); returning stub resources")
+        logging.info("No API key set; returning stub resources")
         return _stub_resources()
 
-    model = os.getenv("DEFAULT_MODEL", "deepseek-chat" if deepseek_key else "gpt-4o-mini")
+    model = os.getenv("DEFAULT_MODEL", "Qwen/Qwen3-8B")
 
     try:
-        if deepseek_key:
+        if gitee_key:
+            gitee_base_url = os.getenv("GITEE_BASE_URL", "https://ai.gitee.com/v1")
+            client = OpenAI(
+                api_key=gitee_key,
+                base_url=gitee_base_url
+            )
+        elif deepseek_key:
             client = OpenAI(
                 api_key=deepseek_key,
                 base_url="https://api.deepseek.com"

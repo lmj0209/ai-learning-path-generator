@@ -32,16 +32,21 @@ class ContextCompressor:
             model: Model to use for compression
             max_tokens: Maximum tokens per compressed chunk
         """
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.api_key = api_key or os.getenv("GITEE_API_KEY") or os.getenv("EMBEDDING_API_KEY") or os.getenv("OPENAI_API_KEY")
         self.model = model
         self.max_tokens = max_tokens
         self.client = None
-        
+
         if self.api_key:
-            self.client = OpenAI(api_key=self.api_key)
+            gitee_base_url = os.getenv("GITEE_BASE_URL", "https://ai.gitee.com/v1")
+            gitee_key = os.getenv("GITEE_API_KEY") or os.getenv("EMBEDDING_API_KEY")
+            if gitee_key:
+                self.client = OpenAI(api_key=self.api_key, base_url=gitee_base_url)
+            else:
+                self.client = OpenAI(api_key=self.api_key)
             print(f"✅ Context compressor initialized (model: {model})")
         else:
-            print("❌ OPENAI_API_KEY not set. Compression disabled.")
+            print("❌ No API key set. Compression disabled.")
     
     def compress(
         self,

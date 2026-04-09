@@ -72,16 +72,22 @@ def _call_perplexity(prompt: str, timeout: int = 45) -> str:
 
 
 def _call_openai(prompt: str, timeout: int = 45) -> str:
-    """Fallback to OpenAI if Perplexity is unavailable."""
-    api_key = os.getenv("OPENAI_API_KEY")
+    """Fallback to Gitee AI (or OpenAI) if Perplexity is unavailable."""
+    gitee_key = os.getenv("GITEE_API_KEY") or os.getenv("EMBEDDING_API_KEY")
+    openai_key = os.getenv("OPENAI_API_KEY")
+    api_key = gitee_key or openai_key
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY env var not set")
-    
-    # Get model name from environment (lowercase)
-    model = os.getenv("DEFAULT_MODEL", "gpt-4o-mini")
-    
-    # Use OpenAI client
-    client = OpenAI(api_key=api_key)
+        raise RuntimeError("No API key found (GITEE_API_KEY or OPENAI_API_KEY)")
+
+    # Get model name from environment
+    model = os.getenv("DEFAULT_MODEL", "Qwen/Qwen3-8B")
+
+    # Use Gitee AI if available, otherwise OpenAI
+    if gitee_key:
+        base_url = os.getenv("GITEE_BASE_URL", "https://ai.gitee.com/v1")
+        client = OpenAI(api_key=api_key, base_url=base_url)
+    else:
+        client = OpenAI(api_key=api_key)
 
     completion = client.chat.completions.create(
         model=model,
@@ -160,9 +166,9 @@ def get_job_market_stats(topic: str) -> Dict[str, Any]:
             print(f"ERROR: Perplexity failed: {exc}")
             logging.warning(f"Perplexity job-market fetch failed: {exc}. Falling back to OpenAI...")
     
-    # Fallback to OpenAI
+    # Fallback to Gitee AI / OpenAI
     try:
-        logging.info(f"Fetching job market data for '{topic}' using OpenAI...")
+        logging.info(f"Fetching job market data for '{topic}' using AI...")
         raw = _call_openai(prompt)
         data = _extract_json(raw)
         

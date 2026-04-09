@@ -330,17 +330,19 @@ def estimate_api_cost(token_count: int, model: str = "gpt-4o-mini") -> float:
     """
     # Pricing per 1M tokens (input)
     pricing = {
+        "Qwen/Qwen3-8B": 0.0,  # Gitee AI free model
         "gpt-4o-mini": 0.15,
         "gpt-4o": 2.50,
         "gpt-4": 30.00,
         "gpt-3.5-turbo": 0.50,
+        "deepseek-chat": 0.14,
         "text-embedding-3-small": 0.02,
         "text-embedding-3-large": 0.13,
         "text-embedding-ada-002": 0.10,
     }
-    
-    # Get price per million tokens
-    price_per_million = pricing.get(model, 0.15)  # Default to gpt-4o-mini pricing
+
+    # Get price per million tokens (default 0 for unknown/free models)
+    price_per_million = pricing.get(model, 0.0)
     
     # Calculate cost
     cost = (token_count / 1_000_000) * price_per_million

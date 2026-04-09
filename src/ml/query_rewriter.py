@@ -31,16 +31,21 @@ class QueryRewriter:
             model: Model to use for rewriting (default: gpt-3.5-turbo)
             max_tokens: Maximum tokens for rewritten query
         """
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.api_key = api_key or os.getenv("GITEE_API_KEY") or os.getenv("EMBEDDING_API_KEY") or os.getenv("OPENAI_API_KEY")
         self.model = model
         self.max_tokens = max_tokens
         self.client = None
-        
+
         if self.api_key:
-            self.client = OpenAI(api_key=self.api_key)
+            gitee_base_url = os.getenv("GITEE_BASE_URL", "https://ai.gitee.com/v1")
+            gitee_key = os.getenv("GITEE_API_KEY") or os.getenv("EMBEDDING_API_KEY")
+            if gitee_key:
+                self.client = OpenAI(api_key=self.api_key, base_url=gitee_base_url)
+            else:
+                self.client = OpenAI(api_key=self.api_key)
             print(f"✅ Query rewriter initialized (model: {model})")
         else:
-            print("❌ OPENAI_API_KEY not set. Query rewriting disabled.")
+            print("❌ No API key set. Query rewriting disabled.")
     
     def rewrite(self, query: str) -> str:
         """
