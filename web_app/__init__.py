@@ -21,7 +21,7 @@ def create_app(config_class=Config):
     # If the app is running behind a proxy (like on Render), fix the WSGI environment
     if os.environ.get('RENDER'):
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
-    
+
     # Set DEV_MODE from environment
     app.config['DEV_MODE'] = os.environ.get('DEV_MODE', 'False').lower() == 'true'
     if app.config['DEV_MODE']:
@@ -29,7 +29,12 @@ def create_app(config_class=Config):
 
     db.init_app(app)
     login_manager.init_app(app)
-    migrate.init_app(app, db)
+
+    # On Render: skip Flask-Migrate/Alembic entirely to avoid
+    # "unable to infer type for attribute score" error from
+    # Flask-Dance OAuthConsumerMixin + SQLAlchemy 2.0 + Alembic conflict
+    if not os.environ.get('RENDER'):
+        migrate.init_app(app, db)
 
     # Initialize Redis connection for RQ
     try:
@@ -55,15 +60,34 @@ def create_app(config_class=Config):
 
     # Import models here to ensure they are registered with SQLAlchemy
     from web_app import models
-    
+
+    # On Render: auto-create all tables if they don't exist
+    if os.environ.get('RENDER'):
+        with app.app_context():
+            try:
+                from sqlalchemy import inspect
+                inspector = inspect(db.engine)
+                existing_tables = inspector.get_table_names()
+                if not existing_tables or 'users' not in existing_tables:
+                    print("🔧 Creating database tables (first deploy)...")
+                    db.create_all()
+                    print("✅ Database tables created successfully!")
+                else:
+                    print(f"✅ Database tables already exist ({len(existing_tables)} tables)")
+            except Exception as e:
+                print(f"⚠️  Database table check/create: {e}")
+                # Try create_all anyway
+                try:
+                    db.create_all()
+                    print("✅ Database tables created (fallback)!")
+                except Exception as e2:
+                    print(f"⚠️  Could not create tables: {e2}")
+
     # Google OAuth blueprint (Flask-Dance)
     from web_app.google_oauth import google_bp, bp as google_auth_bp
     # Register Flask-Dance blueprint at /login/google
     app.register_blueprint(google_bp, url_prefix="/login")
     # Register our auth blueprint for callbacks and helper routes under /auth
     app.register_blueprint(google_auth_bp, url_prefix="/auth")
-    
-    # Flask-Dance will use session storage by default
-    # This works better for our use case since we create the user in our callback
 
     return app
